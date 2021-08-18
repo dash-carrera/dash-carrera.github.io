@@ -1,10 +1,9 @@
 -Fix formatting on Info boxes of portfolio
 -Make headers for each section on landing page clearer (Portfolio, about, etc..)
--Remove email from bottom of non-landing pages too
 -Text changing color when window smaller to be less readable on portfolio pages
 
 -In general, check mobile compatibility
 
--Scale subtitle landing title to be same as main title
+-Stop email showing up in footer of portfolio pages
 
--Update digital media CV, new version
+-Scale subtitle landing title to be same as main title
