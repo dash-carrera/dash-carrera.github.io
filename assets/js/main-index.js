@@ -19,7 +19,7 @@ $(document).ready(function() {
 
     document.title="Dashiel Carrera";
     $('.policy-box').html(`<ul>
-                <li><span>© Dashiel Carrera 2020. All rights reserved. </span></li>
+                <li><span>© Dashiel Carrera 2021. All rights reserved. </span></li>
                 
               </ul>`);
     $('.fixed-footer-social').html(`<ul>
