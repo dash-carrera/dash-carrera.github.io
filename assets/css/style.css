@@ -39,7 +39,7 @@ body {
   color: #888888;
   line-height: 24px;
   font-size: 13px;
-  font-weight: 400;
+  font-weight: 500;
   -webkit-font-smoothing: antialiased;
   letter-spacing: 0.4px;
   padding-bottom: 30px;
@@ -60,9 +60,9 @@ img:not([draggable]), embed, object, video {
   height: auto;
 }
 
-a {
+/*a {
   color: #666;
-}
+}*/
 
 /***********************************************************************************************/
 /* =Help classes*/
@@ -232,6 +232,7 @@ h5 {
   font-weight: 600;
   letter-spacing: .9px;
   text-transform: capitalize;
+ /* margin-left: 10px;*/
 }
 
 h6 {
@@ -300,8 +301,9 @@ ul {
 
 .navbar-nav>li>a {
   font-family: 'Playfair Display', serif;
-  font-size: 14px;
-  letter-spacing: .7px;
+  font-size: 16px;
+  letter-spacing: 2px;
+  color: #a5a5a5!important;
 }
 
 .dropdown-menu {
@@ -382,7 +384,7 @@ ul {
   color: #f3f3f3;
   letter-spacing: 1px;
   line-height: 1.7;
-  font-size: 1.5vw;
+  font-size: 24px;
 }
 
 .boxed-hero-text .call-to-action {
@@ -739,6 +741,7 @@ ul.testimonials-slider h4, ul.testimonials-slider small {
 .filter-list {
   text-align: center;
   margin-bottom: 50px;
+  font-size: 15px;
 }
 
 .filter-list li {
@@ -888,7 +891,8 @@ ul.testimonials-slider h4, ul.testimonials-slider small {
 }
 
 .pdetail-list {
-  margin-top: 20px;
+  margin-top : 20px;
+  display: block;
 }
 
 .pdetail-list li {
@@ -899,21 +903,25 @@ ul.testimonials-slider h4, ul.testimonials-slider small {
   display: initial;
 }
 
+/*For all the titles of details*/
 .pdetail-list span:nth-child(1) {
-  font-size: 15px;
-  color: #717171;
+  font-size: 17px;
+  color: #c1c1c1;
   text-transform: capitalize;
   line-height: 32px;
-  display: inline-block;
+  display: inline-table;
+  margin-right: 20px;
   /*padding-right: 20px;*/
-  width: 20%;
+/*  width: 20%;*/
 }
 
 
 .pdetail-list span:nth-child(2) {
-  font-size: 14px;
+  font-size: 16px;
   text-transform: capitalize;
   line-height: 32px;
+  font-style: italic;
+  display: inline-table;
 }
 
 /* Work navigation */
@@ -1239,9 +1247,14 @@ h6.email-address {
 }
 
 .fixed-footer-social ul li a {
-  padding: 0 8px;
-  font-size: 13px;
+  padding: 0 8px;s
+  font-size: 15px;
   color: #666;
+}
+
+  .fa {
+    font-size:  15px !important;
+  }
 }
 
 /***********************************************************************************************/
@@ -1289,6 +1302,11 @@ h1, .h1 {
   margin-bottom: 10px;
 }
 
+
+.simple-hero-text h2.hero-description {
+  font-size: 15px;
+}
+
 h2 {
   color: #333;
   letter-spacing: .2px;
@@ -1309,7 +1327,6 @@ h3 {
 p {
   margin: 0 0 15px;
   font-size: 13px;
-  color: #4d4d4d;
   line-height: 24px;
   letter-spacing: 1px;
   font-family: 'Playfair Display', serif;

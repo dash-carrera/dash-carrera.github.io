@@ -1,9 +1,8 @@
--Fix formatting on Info boxes of portfolio
--Make headers for each section on landing page clearer (Portfolio, about, etc..)
--Text changing color when window smaller to be less readable on portfolio pages
+Things to Update / Add: 
+	-Add Roadmap to Abolition to Portfolio
 
--In general, check mobile compatibility
 
--Stop email showing up in footer of portfolio pages
-
--Scale subtitle landing title to be same as main title
+Things to Add to CV:
+	-Add MFAngle Interview to CV
+	-Add attended the Aabolsutely Interdisciplinary Conference
+	-Add new position at the IAI Lab

@@ -13,8 +13,8 @@ $(document).ready(function() {
     document.title="Dashiel Carrera";
     
     $('.policy-box').html(`<ul>
-                <li><span>© Dashiel Carrera 2020 . All rights reserved. </span></li>
-                <li><a href="mailto:dashiel.carrera@gmail.com">dashiel.carrera@gmail.com</a></li>
+                <li><span>© Dashiel Carrera 2021. All rights reserved. </span></li>
+                <!--li><a href="mailto:dashiel.carrera@gmail.com">dashiel.carrera@gmail.com</a></li-->
               </ul>`);
     $('.fixed-footer-social').html(`<ul>
                 <li><a href="https://twitter.com/dashiel_carrera" target="_blank"><i class="fa fa-twitter"></i></a></li>
