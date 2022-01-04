@@ -1,5 +1,7 @@
 CV
 -------
+-Add University of Toronto fellowship to CV
+-Add institutions taught at to teaching sections of CVs
 
 
 Digital Portfolio
