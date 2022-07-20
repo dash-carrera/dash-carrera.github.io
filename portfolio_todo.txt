@@ -1,7 +1,24 @@
 CV
 -------
 -Add University of Toronto fellowship to CV
+-Add Virginia Tech fellowship to CV
 -Add institutions taught at to teaching sections of CVs
+-Add won School of Cities Grant from University of Toronto
+-Add Workshop Paper in CHI 2022
+-Add Noemi Press readership to CV
+-Add CNF writing experience
+-Creativity and Cognition 2022 Publication
+-Won travel grant from UTM Department of Computer Science, ~$2,500CAD
+-Won Chancellor's Fellowship, UC Santa Cruz, ~$30,000 (declined)
+-Invited Panelist In2Writing
+-Add Glossalia Reading
+-Add attended CHI 2022
+-Gary Marsden Travel Awards Confirmation
+-Add University of toronto 
+-Add fully funded at Virginia Tech MFA
+-Add presented Zoología Fantastica at the VR and Empathy Workshop
+-Board member of The New River
+-List Introducing Richard Chiem at Event
 
 
 Digital Portfolio
@@ -10,19 +27,4 @@ Digital Portfolio
 -Add that Victoria Park Found dead was used in a college course
 -Add HighFrequencyStealing to portfolio
 -Add Emily Morrison Prize poems to portfolio
-
-
-
-
-CU Boulder, portfolio to Do: 
-
-Portfolio Work:
-	Manifesto
-	Practice
-	Afrofuturist Intellectual Mixtapes: A Classroom Case Study
-
-
-Writing to include:
-	The Deer 
-	Watch Me Write
-	metaLab Topic Modeling in the Course Catalog
+-Update THE DEER on website
