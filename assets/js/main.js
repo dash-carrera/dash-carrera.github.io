@@ -23,6 +23,7 @@ $(document).ready(function() {
                 <li><a href="mailto:dashiel.carrera@gmail.com" target="_blank"><i class="fa fa-envelope"></i></a></li>
               </ul>`);
     $('.nav').html(`<li><a href="index.html#top">Home</a></li>
+            <li><a href="portfolio-pages/deer.html">DEER</a></li>
             <li><a href="index.html#portfolio-section">Portfolio</a></li>
              <li><a href="publications.html">Publications</a></li>
              <li><a href="index.html#about-us-sction">About</a></li>
