@@ -1,6 +1,12 @@
 CV
 -------
 -Add lessons from Alec Jacobson's best practices for an academic CV
+-Update digital media CV, see if add anything from digital media CV to research CV
+-Add Ancilliary Review
+-Add Hazlitt Convo
+-Add LARB Convo
+-Add Neon Pajamas end of year list
+
 
 Digital Media CV Only
 -------
@@ -13,4 +19,12 @@ Digital Portfolio
 -Add that Victoria Park Found dead was used in a college course
 -Add HighFrequencyStealing to portfolio
 -Add Emily Morrison Prize poems to portfolio
--Update THE DEER on website, more links, prominenc, ease
+-Add Animatronics workshop to portfolio
+
+
+DEER PAGE
+------------
+-Add Ancilliary Review of THE DEER
+-Add Hazlitt Conversation
+-Neon Pajamas end of year list
+-Add LARB interview
