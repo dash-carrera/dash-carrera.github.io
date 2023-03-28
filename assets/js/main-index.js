@@ -19,13 +19,11 @@ $(document).ready(function() {
 
     document.title="Dashiel Carrera";
     $('.policy-box').html(`<ul>
-                <li><span>© Dashiel Carrera 2021. All rights reserved. </span></li>
+                <li><span>© Dashiel Carrera 2023. All rights reserved. </span></li>
                 
               </ul>`);
     $('.fixed-footer-social').html(`<ul>
                 <li><a href="https://twitter.com/dashiel_carrera" target="_blank"><i class="fa fa-twitter"></i></a></li>
-                <li><a href="https://github.com/dash-carrera" target="_blank"><i class="fa fa-github"></i></a></li>
-                <li><a href="https://www.linkedin.com/in/dashiel-carrera/" target="_blank"><i class="fa fa-linkedin"></i></a></li>
                 <li><a href="mailto:dashiel.carrera@gmail.com" target="_blank"><i class="fa fa-envelope"></i></a></li>
               </ul>`);
     if ($('nav li:eq(4)').text()=='Skills')
