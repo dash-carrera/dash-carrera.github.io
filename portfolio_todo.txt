@@ -1,9 +1,6 @@
 CV
 -------
 -Add lessons from Alec Jacobson's best practices for an academic CV
--Update digital media CV, see if add anything from digital media CV to research CV
--Add new HCI CV to website, update date
--Add literary CV to website
 
 
 Digital Portfolio
