@@ -2,15 +2,8 @@ CV
 -------
 -Add lessons from Alec Jacobson's best practices for an academic CV
 -Update digital media CV, see if add anything from digital media CV to research CV
--Add Ancilliary Review
--Add Hazlitt Convo
--Add LARB Convo
--Add Neon Pajamas end of year list
-
-
-Digital Media CV Only
--------
--Add Noemi Press readership to CV
+-Add new HCI CV to website, update date
+-Add literary CV to website
 
 
 Digital Portfolio
@@ -20,4 +13,13 @@ Digital Portfolio
 -Add HighFrequencyStealing to portfolio
 -Add Emily Morrison Prize poems to portfolio
 -Add Animatronics workshop to portfolio
+-Add seperate web page for reseearch
+-Add piece with LVB
+-Shorten the headr video
+-Change the loading icon
+
+Artist Statement
+----------------
+-Write artist statement for literature
+-Write artist statement for digital media
 

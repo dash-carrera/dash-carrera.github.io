@@ -1,0 +1,93 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Medium Length Graduate Curriculum Vitae
+% LaTeX Template
+% Version 1.1 (9/12/12)
+%
+% This template has been downloaded from:
+% http://www.LaTeXTemplates.com
+%
+% Original author:
+% Rensselaer Polytechnic Institute (http://www.rpi.edu/dept/arc/training/latex/resumes/)
+%
+% Important note:
+% This template requires the res.cls file to be in the same directory as the
+% .tex file. The res.cls file provides the resume style used for structuring the
+% document.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+
+
+\documentclass[margin, 10pt]{res} % Use the res.cls style, the font size can be changed to 11pt or 12pt here
+
+
+\addtolength{\topmargin}{-.875in}
+%\addtolength{\bottommargin}{-.875in}
+
+\usepackage{helvet} % Default font is the helvetica postscript font
+%\usepackage{newcent} % To change the default font to the new century schoolbook postscript font uncomment this line and comment the one above
+
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!50!red,
+  urlcolor=blue
+}
+
+\setlength{\textwidth}{5.1in} % Text width of the document
+\setlength{\textheight}{10in}
+
+\begin{document}
+
+%----------------------------------------------------------------------------------------
+%	NAME AND ADDRESS SECTION
+%----------------------------------------------------------------------------------------
+
+\moveleft.5\hoffset\centerline{\huge\bf Dashiel Carrera} % Your name at the top
+ 
+  \moveleft.5\hoffset\centerline{\footnotesize www.dashielcarrera.com}
+ \moveleft.5\hoffset\centerline{\footnotesize dcarrera@dgp.toronto.edu}
+\moveleft.5\hoffset\centerline{\footnotesize (617) 595 6680}
+
+
+\begin{resume}
+
+\input{sections/education}
+\input{sections/editorial}
+\input{sections/artistic_pub} 
+
+\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+
+\section{GRANTS \& AWARDS}
+	\input{sections/art_awards}
+
+\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+
+\section{TEACHING }
+	\input{sections/virginia_teaching} 
+	\input{sections/teaching_uoft} 
+	\input{sections/guest_teaching}
+	\input{sections/mentorship}
+
+ \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+ 
+ \section{EXHIBITIONS + PERFORMANCES}
+  \input{sections/literary_events}
+ \input{sections/exhibitions_performances}
+ 
+  \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+
+\input{sections/press}
+ 
+  \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt} 
+  
+\input{sections/outreach}
+
+
+
+\end{resume}
+\end{document}
