@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  18 MAY 2023 14:36
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  16 JUL 2023 13:34
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -303,19 +303,26 @@ Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
 
-) [2
+[2
 
 
-] (./sections/academic_awards.tex) (./sections/art_awards.tex [3
+]
+Underfull \hbox (badness 10000) in paragraph at lines 21--22
+
+ []
+
+) (./sections/academic_awards.tex [3
 
 
-])
+]) (./sections/art_awards.tex)
 (./sections/teaching_uoft.tex
 Underfull \hbox (badness 10000) in paragraph at lines 2--3
 
  []
 
+[4
 
+]
 Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
@@ -325,9 +332,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 13--14
 
  []
 
-[4
 
-]
 Underfull \hbox (badness 10000) in paragraph at lines 19--20
 
  []
@@ -357,7 +362,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 17--18
 
  []
 
+[5
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 23--24
 
  []
@@ -372,9 +380,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
  []
 
-[5
-
-]) (./sections/academic_talks.tex
+) (./sections/academic_talks.tex
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
@@ -390,17 +396,15 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
 
-) (./sections/academic_service.tex)
+) (./sections/academic_service.tex [6
+
+
+])
 Underfull \hbox (badness 10000) in paragraph at lines 12--82
 
  []
 
-(./sections/artistic_pub.tex [6
-
-
-
-
-]
+(./sections/artistic_pub.tex
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
@@ -455,7 +459,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 23--24
 
  []
 
+[7
 
+
+
+
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 24--25
 
  []
@@ -480,12 +491,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
  []
 
-[7
 
-
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 33--34
 
  []
@@ -535,7 +541,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 44--45
 
  []
 
-) (./sections/exhibitions_performances.tex
+) [8
+
+] (./sections/exhibitions_performances.tex
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
@@ -550,10 +558,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 6--7
 
  []
 
-[8
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 12--13
 
  []
@@ -588,7 +593,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
 
+[9
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 19--20
 
  []
@@ -608,10 +616,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
 
-[9
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
@@ -646,7 +651,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 2--5
 
  []
 
-) (./sections/artistic_jobs.tex
+[10
+
+
+]) (./sections/artistic_jobs.tex
 Underfull \hbox (badness 10000) in paragraph at lines 3--6
 
  []
@@ -656,16 +664,18 @@ Underfull \hbox (badness 10000) in paragraph at lines 12--15
 
  []
 
-[10
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 20--23
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 27--29
+Underfull \hbox (badness 10000) in paragraph at lines 27--30
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 36--38
 
  []
 
@@ -694,12 +704,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
-Missing character: There is no Ñ in font cmti10!
+[11
 
+]
 Underfull \hbox (badness 10000) in paragraph at lines 6--7
 
  []
 
+Missing character: There is no Ñ in font cmti10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
@@ -715,12 +727,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
 
-Missing character: There is no š in font cmti10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
 
+Missing character: There is no š in font cmti10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 11--12
 
@@ -736,7 +748,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 13--14
 
  []
 
-[11]
+
 Underfull \hbox (badness 10000) in paragraph at lines 14--15
 
  []
@@ -756,6 +768,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 17--18
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 18--19
+
+ []
+
 )
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 111.
  [12]
@@ -765,8 +782,8 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 111.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 111.
  ) 
 Here is how much of TeX's memory you used:
- 5074 strings out of 493014
- 74910 string characters out of 6133351
+ 5078 strings out of 493014
+ 74942 string characters out of 6133351
  159095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
@@ -779,10 +796,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (12 pages, 144122 bytes).
+Output written on hci_cv.pdf (12 pages, 145436 bytes).
 PDF statistics:
- 216 PDF objects out of 1000 (max. 8388607)
- 193 compressed objects within 2 object streams
- 108 named destinations out of 1000 (max. 500000)
+ 222 PDF objects out of 1000 (max. 8388607)
+ 199 compressed objects within 2 object streams
+ 112 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
