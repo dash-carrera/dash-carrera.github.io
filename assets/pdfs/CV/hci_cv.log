@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  16 JUL 2023 13:34
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  24 JUL 2023 17:49
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -381,25 +381,41 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
  []
 
 ) (./sections/academic_talks.tex
-Underfull \hbox (badness 10000) in paragraph at lines 4--5
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
-Missing character: There is no ’ in font cmr10!
+Missing character: There is no Ð in font cmti10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
 
-) (./sections/academic_service.tex [6
+
+Underfull \hbox (badness 10000) in paragraph at lines 9--10
+
+ []
 
 
-])
+Underfull \hbox (badness 10000) in paragraph at lines 11--12
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 12--13
+
+ []
+
+Missing character: There is no ’ in font cmr10!
+
+Underfull \hbox (badness 10000) in paragraph at lines 14--15
+
+ []
+
+[6
+
+
+]) (./sections/academic_service.tex)
 Underfull \hbox (badness 10000) in paragraph at lines 12--82
 
  []
@@ -444,7 +460,13 @@ Underfull \hbox (badness 10000) in paragraph at lines 20--21
 
  []
 
+[7
 
+
+
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 21--22
 
  []
@@ -459,14 +481,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 23--24
 
  []
 
-[7
 
-
-
-
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 24--25
 
  []
@@ -531,7 +546,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 42--43
 
  []
 
+[8
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 43--44
 
  []
@@ -541,9 +559,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 44--45
 
  []
 
-) [8
-
-] (./sections/exhibitions_performances.tex
+) (./sections/exhibitions_performances.tex
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
@@ -583,7 +599,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 16--17
 
  []
 
+[9
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 17--18
 
  []
@@ -593,10 +612,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
 
-[9
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 19--20
 
  []
@@ -653,7 +669,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 2--5
 
 [10
 
-
 ]) (./sections/artistic_jobs.tex
 Underfull \hbox (badness 10000) in paragraph at lines 3--6
 
@@ -689,7 +704,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
 
-) (./sections/press.tex
+[11
+
+
+]) (./sections/press.tex
 Underfull \hbox (badness 10000) in paragraph at lines 3--4
 
  []
@@ -704,9 +722,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
-[11
 
-]
 Underfull \hbox (badness 10000) in paragraph at lines 6--7
 
  []
@@ -782,13 +798,13 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 111.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 111.
  ) 
 Here is how much of TeX's memory you used:
- 5078 strings out of 493014
- 74942 string characters out of 6133351
+ 5081 strings out of 493014
+ 74963 string characters out of 6133351
  159095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 29i,8n,28p,427b,460s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 29i,8n,28p,427b,462s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></
@@ -796,10 +812,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (12 pages, 145436 bytes).
+Output written on hci_cv.pdf (12 pages, 146253 bytes).
 PDF statistics:
- 222 PDF objects out of 1000 (max. 8388607)
- 199 compressed objects within 2 object streams
- 112 named destinations out of 1000 (max. 500000)
+ 227 PDF objects out of 1000 (max. 8388607)
+ 203 compressed objects within 3 object streams
+ 115 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
