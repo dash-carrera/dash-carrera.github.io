@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  6 SEP 2023 13:26
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  16 OCT 2023 19:19
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -491,6 +491,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 11--12
+
+ []
+
 ) (./sections/exhibitions_performances.tex
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
@@ -629,14 +634,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 23--24
 
  []
 
+[7
 
+]
 Underfull \hbox (badness 10000) in paragraph at lines 27--28
 
  []
 
-[7
-
-]) (./sections/teaching_uoft.tex
+) (./sections/teaching_uoft.tex
 Underfull \hbox (badness 10000) in paragraph at lines 3--4
 
  []
@@ -676,10 +681,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
  []
 
-) [8
+[8
 
-
-] (./sections/outreach.tex
+]) (./sections/outreach.tex
 Underfull \hbox (badness 10000) in paragraph at lines 2--3
 
  []
@@ -693,6 +697,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 93.
  [9
 
+
 ]
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 93.
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 93.
@@ -700,13 +705,13 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 93.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 93.
  ) 
 Here is how much of TeX's memory you used:
- 5036 strings out of 493014
- 74298 string characters out of 6133351
+ 5037 strings out of 493014
+ 74305 string characters out of 6133351
  160095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 29i,8n,28p,397b,450s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 29i,8n,28p,397b,446s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></
@@ -714,10 +719,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on lit_cv.pdf (9 pages, 126784 bytes).
+Output written on lit_cv.pdf (9 pages, 127254 bytes).
 PDF statistics:
- 172 PDF objects out of 1000 (max. 8388607)
- 152 compressed objects within 2 object streams
- 88 named destinations out of 1000 (max. 500000)
+ 173 PDF objects out of 1000 (max. 8388607)
+ 153 compressed objects within 2 object streams
+ 89 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
