@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  17 OCT 2023 03:46
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  29 OCT 2023 02:53
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -431,7 +431,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 15--16
  []
 
 ) (./sections/academic_service.tex)
-Underfull \hbox (badness 10000) in paragraph at lines 13--82
+Underfull \hbox (badness 10000) in paragraph at lines 14--82
 
  []
 
@@ -469,12 +469,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 12--13
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 17--18
+Underfull \hbox (badness 10000) in paragraph at lines 13--14
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 20--21
+Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
 
@@ -509,12 +509,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 26--27
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 31--32
+Underfull \hbox (badness 10000) in paragraph at lines 27--28
 
  []
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 32--33
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 33--34
 
  []
 
@@ -524,11 +529,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 33--34
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 34--35
 
  []
@@ -544,7 +544,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 36--37
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 39--40
+Underfull \hbox (badness 10000) in paragraph at lines 37--38
 
  []
 
@@ -570,6 +570,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 43--44
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 44--45
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 45--46
 
  []
 
@@ -818,9 +823,9 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 111.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 111.
  ) 
 Here is how much of TeX's memory you used:
- 5084 strings out of 493014
- 74984 string characters out of 6133351
- 159095 words of memory out of 5000000
+ 5085 strings out of 493014
+ 74991 string characters out of 6133351
+ 160095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
@@ -832,10 +837,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (13 pages, 147895 bytes).
+Output written on hci_cv.pdf (13 pages, 147976 bytes).
 PDF statistics:
- 234 PDF objects out of 1000 (max. 8388607)
- 209 compressed objects within 3 object streams
- 118 named destinations out of 1000 (max. 500000)
+ 235 PDF objects out of 1000 (max. 8388607)
+ 210 compressed objects within 3 object streams
+ 119 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
