@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Green Eggs and Ham Generator</title>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            background-color: green; /* Set background color to green */
+            color: white; /* Set text color to white */
+            cursor: pointer;
+            text-align: center;
+        }
+        #result {
+            margin-top: 30px;
+            font-size: 30pt;
+            width: 100%; /* Ensure the result div takes full width */
+            text-align: center;
+        }
+        .floating-image {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            width: 100px; /* Adjust the size as needed */
+            height: auto;
+        }
+
+        .conjunction {
+            color: yellow;
+            text-decoration: underline;
+        }
+
+
+    </style>
+</head>
+<body>
+    <div id="result"></div>
+    <img src="https://www.seussville.com/app/uploads/2019/11/character-Sam.png" alt="Floating Image" class="floating-image">
+
+    <script>
+        const conjunctions = [
+            "and", "or", "but", "so", "yet", "for", "nor", // Coordinating conjunctions
+            "after", "although", "as", "because", "before", "even if", "even though", 
+            "if", "in order that", "once", "provided that", "rather than", "since", 
+            "so that", "than", "that", "though", "unless", "until", "when", "whenever", 
+            "where", "whereas", "wherever", "whether", "while", // Subordinating conjunctions
+            "both", "either", "neither", "not only", "whether", "in so far as","despite" // Correlative conjunctions
+        ];
+
+        let isFirstPhraseGenerated = false;
+
+        function generatePhrase() {
+            let resultDiv = document.getElementById("result");
+            let phrase;
+            
+            if (!isFirstPhraseGenerated) {
+                phrase = "green eggs and ham";
+                isFirstPhraseGenerated = true;
+            } else {
+                let randomIndex = Math.floor(Math.random() * conjunctions.length);
+                conjunction = conjunctions[randomIndex]
+                // phrase = `green eggs ` + conjunction + ` ham`;
+                phrase = `green eggs <span class="conjunction">${conjunction}</span> ham`;
+            }
+
+            let p = document.createElement("p");
+            p.innerHTML = phrase;
+            resultDiv.appendChild(p);
+            p.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+
+        document.body.addEventListener("click", generatePhrase);
+        // Generate the initial phrase on load
+        generatePhrase();
+    </script>
+</body>
+</html>
