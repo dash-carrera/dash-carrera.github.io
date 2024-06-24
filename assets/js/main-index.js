@@ -17,9 +17,17 @@ $(document).ready(function() {
     }
 
 
+    $('.nav').html(`<li><a href="index.html#top">Home</a></li>
+            <li><a href="portfolio-pages/deer.html">Deer</a></li>
+            <li><a href="research-portfolio.html">Research</a></li>
+            <li><a href="index.html#portfolio-section">Portfolio</a></li>
+             <li><a href="publications.html">Publications</a></li>
+             <li><a href="index.html#about-us-sction">About</a></li>
+            <li><a href="cv.html">CV</a></li>`);
+
     document.title="Dashiel Carrera";
     $('.policy-box').html(`<ul>
-                <li><span>© Dashiel Carrera 2023. All rights reserved. </span></li>
+                <li><span>© Dashiel Carrera 2024. All rights reserved. </span></li>
                 
               </ul>`);
     $('.fixed-footer-social').html(`<ul>
