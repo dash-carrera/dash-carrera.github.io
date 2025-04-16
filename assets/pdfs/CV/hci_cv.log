@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  16 APR 2025 12:24
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  16 APR 2025 16:58
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -289,45 +289,40 @@ Underfull \hbox (badness 10000) in paragraph at lines 70--72
  []
 
 ) (./sections/academic_pub.tex
-Overfull \hbox (13.9621pt too wide) in paragraph at lines 9--10
-[]\OT1/cmr/bx/n/10 Carrera, Dashiel\OT1/cmr/m/n/10 , Zhao, Zixin, Ajin Thomas, 
-Ashish, Daniel Wig-dor. ``Nabokov's
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 10--11
+Overfull \hbox (13.9621pt too wide) in paragraph at lines 11--12
+[]\OT1/cmr/bx/n/10 Carrera, Dashiel\OT1/cmr/m/n/10 , Zhao, Zixin, Ajin Thomas, 
+Ashish, Daniel Wig-dor. ``Nabokov's
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 11--12
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 11--13
+Underfull \hbox (badness 10000) in paragraph at lines 12--13
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 13--14
+Underfull \hbox (badness 10000) in paragraph at lines 13--15
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
 
 [2
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 20--21
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 22--23
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 23--24
 
  []
 
@@ -337,7 +332,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 24--25
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 30--31
+Underfull \hbox (badness 10000) in paragraph at lines 25--26
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 26--27
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
  []
 
@@ -428,7 +433,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
 [6
 
-
 ]) (./sections/academic_talks.tex
 Underfull \hbox (badness 10000) in paragraph at lines 16--17
 
@@ -455,15 +459,17 @@ Underfull \hbox (badness 10000) in paragraph at lines 24--25
 
  []
 
+[7
+
+
+]
 Missing character: There is no ’ in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 26--27
 
  []
 
-[7
-
-]) (./sections/academic_service.tex
+) (./sections/academic_service.tex
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
@@ -816,8 +822,8 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 112.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 112.
  ) 
 Here is how much of TeX's memory you used:
- 5087 strings out of 493014
- 75052 string characters out of 6133351
+ 5088 strings out of 493014
+ 75059 string characters out of 6133351
  159095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
@@ -830,10 +836,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (13 pages, 150192 bytes).
+Output written on hci_cv.pdf (13 pages, 150593 bytes).
 PDF statistics:
- 236 PDF objects out of 1000 (max. 8388607)
- 211 compressed objects within 3 object streams
- 118 named destinations out of 1000 (max. 500000)
+ 237 PDF objects out of 1000 (max. 8388607)
+ 212 compressed objects within 3 object streams
+ 119 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
