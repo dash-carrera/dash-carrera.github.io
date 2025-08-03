@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  7 JUN 2025 12:52
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  3 AUG 2025 13:13
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -446,21 +446,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
 ]) (./sections/academic_talks.tex
 Missing character: There is no Õ in font cmti10!
-
-Underfull \hbox (badness 10000) in paragraph at lines 24--25
-
- []
-
-[7
+ [7
 
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 26--27
-
- []
-
-Missing character: There is no Ð in font cmti10!
-
 Underfull \hbox (badness 10000) in paragraph at lines 28--29
 
  []
@@ -470,14 +459,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 30--31
 
  []
 
+Missing character: There is no Ð in font cmti10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
  []
 
-Missing character: There is no ’ in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 34--35
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 36--37
+
+ []
+
+Missing character: There is no ’ in font cmr10!
+
+Underfull \hbox (badness 10000) in paragraph at lines 38--39
 
  []
 
@@ -491,15 +491,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--83
 
  []
 
-(./sections/artistic_pub.tex
+[8
+
+] (./sections/artistic_pub.tex
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
-[8
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
@@ -514,32 +513,39 @@ Underfull \hbox (badness 10000) in paragraph at lines 26--27
 
  []
 
+Missing character: There is no š in font cmr10!
 
-Underfull \hbox (badness 10000) in paragraph at lines 31--32
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 33--34
+Underfull \hbox (badness 10000) in paragraph at lines 30--31
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 37--41
+Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 41--43
+Underfull \hbox (badness 10000) in paragraph at lines 34--35
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 47--48
+Underfull \hbox (badness 10000) in paragraph at lines 38--42
 
  []
 
 
+Underfull \hbox (badness 10000) in paragraph at lines 42--44
+
+ []
+
+[9
+
+
+
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 48--49
 
  []
@@ -549,12 +555,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 49--50
 
  []
 
-[9
 
-
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 50--51
 
  []
@@ -570,7 +571,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 52--53
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 55--56
+Underfull \hbox (badness 10000) in paragraph at lines 53--54
 
  []
 
@@ -599,12 +600,20 @@ Underfull \hbox (badness 10000) in paragraph at lines 60--61
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 61--62
+
+ []
+
 ) (./sections/exhibitions_performances.tex
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
+[10
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
@@ -619,10 +628,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
 
-[10
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
@@ -638,23 +644,22 @@ Underfull \hbox (badness 10000) in paragraph at lines 12--13
  []
 
 ) (./sections/literary_events.tex
-Missing character: There is no š in font cmr10!
-
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
 
+Missing character: There is no š in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 6--7
 
  []
 
-Missing character: There is no š in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 8--9
 
  []
 
+Missing character: There is no š in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
@@ -665,7 +670,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 12--13
 
  []
 
+[11
 
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 14--15
 
  []
@@ -680,33 +688,35 @@ Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
 
-[11
 
-
-]
-Underfull \hbox (badness 10000) in paragraph at lines 19--21
+Underfull \hbox (badness 10000) in paragraph at lines 20--21
 
  []
 
-Missing character: There is no Œ in font cmr10!
-Missing character: There is no Œ in font cmr10!
 
 Underfull \hbox (badness 10000) in paragraph at lines 21--23
 
  []
 
+Missing character: There is no Œ in font cmr10!
+Missing character: There is no Œ in font cmr10!
 
-Underfull \hbox (badness 10000) in paragraph at lines 23--24
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 26--34
+Underfull \hbox (badness 10000) in paragraph at lines 23--25
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 36--37
+Underfull \hbox (badness 10000) in paragraph at lines 25--26
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 28--36
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 38--39
 
  []
 
@@ -720,15 +730,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--6
 
  []
 
+[12
 
+]
 Underfull \hbox (badness 10000) in paragraph at lines 12--15
 
  []
 
-[12
 
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 20--23
 
  []
@@ -778,7 +787,9 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
 
  []
 
+[13
 
+]
 Underfull \hbox (badness 10000) in paragraph at lines 8--9
 
  []
@@ -799,7 +810,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 11--12
 
  []
 
-[13]
+
 Underfull \hbox (badness 10000) in paragraph at lines 12--13
 
  []
@@ -854,13 +865,13 @@ Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 112.
 Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 112.
  ) 
 Here is how much of TeX's memory you used:
- 5098 strings out of 493014
- 75129 string characters out of 6133351
+ 5102 strings out of 493014
+ 75157 string characters out of 6133351
  159095 words of memory out of 5000000
  8465 multiletter control sequences out of 15000+600000
  6157 words of font info for 22 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 29i,8n,28p,427b,487s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 29i,8n,28p,427b,462s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10.pfb></
@@ -868,10 +879,10 @@ usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></usr
 /local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsl10.pfb></usr/
 local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/l
 ocal/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (14 pages, 152908 bytes).
+Output written on hci_cv.pdf (14 pages, 153284 bytes).
 PDF statistics:
- 252 PDF objects out of 1000 (max. 8388607)
- 226 compressed objects within 3 object streams
- 129 named destinations out of 1000 (max. 500000)
+ 257 PDF objects out of 1000 (max. 8388607)
+ 231 compressed objects within 3 object streams
+ 133 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
