@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  24 SEP 2025 20:29
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  27 SEP 2025 21:11
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -310,19 +310,24 @@ Underfull \hbox (badness 10000) in paragraph at lines 70--72
  []
 
 ) (./sections/academic_pub.tex
-Underfull \hbox (badness 10000) in paragraph at lines 10--11
+Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 12--13
+Underfull \hbox (badness 10000) in paragraph at lines 11--12
 
  []
 
 
-Overfull \hbox (13.9621pt too wide) in paragraph at lines 15--16
+Overfull \hbox (13.9621pt too wide) in paragraph at lines 14--15
 []\OT1/cmr/bx/n/10 Carrera, Dashiel\OT1/cmr/m/n/10 , Zhao, Zixin, Ajin Thomas, 
 Ashish, Daniel Wig-dor. ``Nabokov's
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 14--15
+
  []
 
 
@@ -331,38 +336,38 @@ Underfull \hbox (badness 10000) in paragraph at lines 15--16
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 16--17
-
- []
-
-
 
 [2
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 17--19
+Underfull \hbox (badness 10000) in paragraph at lines 16--18
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 19--20
+Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 28--29
+Underfull \hbox (badness 10000) in paragraph at lines 25--26
 
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 29--30
+
+ []
+
+
+Overfull \hbox (4.61015pt too wide) in paragraph at lines 30--31
+[]\OT1/cmr/m/n/10 Agrawaa, Ta-neea, Bon-fils, Nils, Wi, Siyi, Lee Do-gan, Ameli
+a, \OT1/cmr/bx/n/10 Car-rera, Dashiel\OT1/cmr/m/n/10 .
  []
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 30--31
 
- []
-
-
-Overfull \hbox (4.61015pt too wide) in paragraph at lines 31--32
-[]\OT1/cmr/m/n/10 Agrawaa, Ta-neea, Bon-fils, Nils, Wi, Siyi, Lee Do-gan, Ameli
-a, \OT1/cmr/bx/n/10 Car-rera, Dashiel\OT1/cmr/m/n/10 .
  []
 
 
@@ -386,12 +391,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 34--35
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 35--36
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 41--42
+Underfull \hbox (badness 10000) in paragraph at lines 40--41
 
  []
 
@@ -935,7 +935,7 @@ blic/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmsl10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (15 pages, 153954 bytes).
+Output written on hci_cv.pdf (15 pages, 153936 bytes).
 PDF statistics:
  275 PDF objects out of 1000 (max. 8388607)
  241 compressed objects within 3 object streams
