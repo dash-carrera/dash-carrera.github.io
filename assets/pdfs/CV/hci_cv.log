@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  27 SEP 2025 21:11
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  1 OCT 2025 12:17
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -310,6 +310,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 70--72
  []
 
 ) (./sections/academic_pub.tex
+Underfull \hbox (badness 10000) in paragraph at lines 6--7
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
@@ -331,15 +336,15 @@ Underfull \hbox (badness 10000) in paragraph at lines 14--15
  []
 
 
+
+[2
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
 
 
-
-[2
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 16--18
 
  []
@@ -920,8 +925,8 @@ L3 programming layer <2025-01-18>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 8567 strings out of 474662
- 134701 string characters out of 5751110
+ 8568 strings out of 474662
+ 134709 string characters out of 5751110
  529464 words of memory out of 5000000
  31361 multiletter control sequences out of 15000+600000
  561689 words of font info for 45 fonts, out of 8000000 for 9000
@@ -935,10 +940,10 @@ blic/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmsl10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (15 pages, 153936 bytes).
+Output written on hci_cv.pdf (15 pages, 154452 bytes).
 PDF statistics:
- 275 PDF objects out of 1000 (max. 8388607)
- 241 compressed objects within 3 object streams
- 139 named destinations out of 1000 (max. 500000)
+ 276 PDF objects out of 1000 (max. 8388607)
+ 242 compressed objects within 3 object streams
+ 140 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
