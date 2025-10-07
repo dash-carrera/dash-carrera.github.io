@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  1 OCT 2025 12:17
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  5 OCT 2025 17:13
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -315,16 +315,25 @@ Underfull \hbox (badness 10000) in paragraph at lines 6--7
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 9--10
+Underfull \hbox (badness 10000) in paragraph at lines 8--9
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 11--12
+Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
 
 
+Underfull \hbox (badness 10000) in paragraph at lines 12--13
+
+ []
+
+
+
+[2
+
+]
 Overfull \hbox (13.9621pt too wide) in paragraph at lines 14--15
 []\OT1/cmr/bx/n/10 Carrera, Dashiel\OT1/cmr/m/n/10 , Zhao, Zixin, Ajin Thomas, 
 Ashish, Daniel Wig-dor. ``Nabokov's
@@ -336,10 +345,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 14--15
  []
 
 
-
-[2
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
@@ -355,19 +360,24 @@ Underfull \hbox (badness 10000) in paragraph at lines 18--19
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 25--26
+Underfull \hbox (badness 10000) in paragraph at lines 27--28
+
+ []
+
+
+Overfull \hbox (4.61015pt too wide) in paragraph at lines 28--29
+[]\OT1/cmr/m/n/10 Agrawaa, Ta-neea, Bon-fils, Nils, Wi, Siyi, Lee Do-gan, Ameli
+a, \OT1/cmr/bx/n/10 Car-rera, Dashiel\OT1/cmr/m/n/10 .
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 28--29
 
  []
 
 
 Underfull \hbox (badness 10000) in paragraph at lines 29--30
 
- []
-
-
-Overfull \hbox (4.61015pt too wide) in paragraph at lines 30--31
-[]\OT1/cmr/m/n/10 Agrawaa, Ta-neea, Bon-fils, Nils, Wi, Siyi, Lee Do-gan, Ameli
-a, \OT1/cmr/bx/n/10 Car-rera, Dashiel\OT1/cmr/m/n/10 .
  []
 
 
@@ -386,25 +396,15 @@ Underfull \hbox (badness 10000) in paragraph at lines 32--33
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 33--34
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 34--35
-
- []
-
-
-Underfull \hbox (badness 10000) in paragraph at lines 40--41
-
- []
-
-
 
 [3
 
-]) (./sections/academic_awards.tex
+]
+Underfull \hbox (badness 10000) in paragraph at lines 38--39
+
+ []
+
+) (./sections/academic_awards.tex
 
 [4
 
@@ -444,16 +444,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 27--28
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 33--34
-
- []
-
-
 
 [6
 
 
 ]
+Underfull \hbox (badness 10000) in paragraph at lines 33--34
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 39--40
 
  []
@@ -493,12 +493,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
  []
 
-)
+
 
 [7
 
+]) (./sections/academic_talks.tex
 
-] (./sections/academic_talks.tex
+[8
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 28--29
 
  []
@@ -509,10 +513,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 30--31
  []
 
 
-
-[8
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 32--33
 
  []
@@ -542,17 +542,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--85
 
  []
 
-(./sections/artistic_pub.tex
+
+
+[9
+
+] (./sections/artistic_pub.tex
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
 
 
-
-[9
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 15--16
 
  []
@@ -588,6 +587,14 @@ Underfull \hbox (badness 10000) in paragraph at lines 36--37
  []
 
 
+
+[10
+
+
+
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 40--44
 
  []
@@ -608,13 +615,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 51--52
  []
 
 
-
-[10
-
-
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 52--53
 
  []
@@ -665,6 +665,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 63--64
  []
 
 ) (./sections/exhibitions_performances.tex
+
+[11
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
  []
@@ -680,11 +684,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 8--9
  []
 
 
-
-[11
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
@@ -725,6 +724,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 10--11
  []
 
 
+
+[12
+
+
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 12--13
 
  []
@@ -740,11 +745,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 16--17
  []
 
 
-
-[12
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
@@ -784,17 +784,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 2--5
 
  []
 
-) (./sections/artistic_jobs.tex
+
+
+[13
+
+]) (./sections/artistic_jobs.tex
 Underfull \hbox (badness 10000) in paragraph at lines 3--6
 
  []
 
 
-
-[13
-
-
-]
 Underfull \hbox (badness 10000) in paragraph at lines 12--15
 
  []
@@ -830,6 +829,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--4
  []
 
 
+
+[14
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
 
  []
@@ -860,8 +863,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 9--10
  []
 
 
-
-[14]
 Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
@@ -931,7 +932,7 @@ Here is how much of TeX's memory you used:
  31361 multiletter control sequences out of 15000+600000
  561689 words of font info for 45 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
- 75i,8n,79p,456b,701s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,8n,79p,456b,696s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </Users/Dash/Library/texlive/2025basic/texmf-var/fonts/pk/ljfour/jknappen/ec
 /tcrm1000.600pk></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public/ams
 fonts/cm/cmbx10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1/public
@@ -940,7 +941,7 @@ blic/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmsl10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (15 pages, 154452 bytes).
+Output written on hci_cv.pdf (15 pages, 154396 bytes).
 PDF statistics:
  276 PDF objects out of 1000 (max. 8388607)
  242 compressed objects within 3 object streams
