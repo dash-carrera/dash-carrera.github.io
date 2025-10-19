@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  19 OCT 2025 11:26
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  19 OCT 2025 12:01
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -584,22 +584,22 @@ Underfull \hbox (badness 10000) in paragraph at lines 36--37
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 40--44
+Underfull \hbox (badness 10000) in paragraph at lines 38--39
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 44--46
+Underfull \hbox (badness 10000) in paragraph at lines 42--46
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 50--51
+Underfull \hbox (badness 10000) in paragraph at lines 46--48
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 51--52
+Underfull \hbox (badness 10000) in paragraph at lines 52--53
 
  []
 
@@ -611,11 +611,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 51--52
 
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 52--53
-
- []
-
-
 Underfull \hbox (badness 10000) in paragraph at lines 53--54
 
  []
@@ -631,12 +626,12 @@ Underfull \hbox (badness 10000) in paragraph at lines 55--56
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 58--59
+Underfull \hbox (badness 10000) in paragraph at lines 56--57
 
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 59--60
+Underfull \hbox (badness 10000) in paragraph at lines 57--58
 
  []
 
@@ -660,6 +655,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 63--64
 
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 64--65
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 65--66
+
+ []
+
 ) (./sections/exhibitions_performances.tex
 Underfull \hbox (badness 10000) in paragraph at lines 5--6
 
@@ -671,16 +676,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 8--9
-
- []
-
-
 
 [11
 
 
 ]
+Underfull \hbox (badness 10000) in paragraph at lines 8--9
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 9--10
 
  []
@@ -731,16 +736,16 @@ Underfull \hbox (badness 10000) in paragraph at lines 14--15
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 16--17
-
- []
-
-
 
 [12
 
 
 ]
+Underfull \hbox (badness 10000) in paragraph at lines 16--17
+
+ []
+
+
 Underfull \hbox (badness 10000) in paragraph at lines 18--19
 
  []
@@ -788,7 +793,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--6
 
 
 [13
-
 
 ]
 Underfull \hbox (badness 10000) in paragraph at lines 12--15
@@ -846,6 +850,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 7--8
  []
 
 
+
+[14
+
+]
 Underfull \hbox (badness 10000) in paragraph at lines 8--9
 
  []
@@ -856,8 +864,6 @@ Underfull \hbox (badness 10000) in paragraph at lines 9--10
  []
 
 
-
-[14]
 Underfull \hbox (badness 10000) in paragraph at lines 10--11
 
  []
@@ -921,8 +927,8 @@ L3 programming layer <2025-01-18>
  ***********
  ) 
 Here is how much of TeX's memory you used:
- 8568 strings out of 474662
- 134712 string characters out of 5751110
+ 8569 strings out of 474662
+ 134720 string characters out of 5751110
  529464 words of memory out of 5000000
  31361 multiletter control sequences out of 15000+600000
  561689 words of font info for 45 fonts, out of 8000000 for 9000
@@ -936,10 +942,10 @@ blic/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmsl10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_cv.pdf (15 pages, 154497 bytes).
+Output written on hci_cv.pdf (15 pages, 154562 bytes).
 PDF statistics:
- 276 PDF objects out of 1000 (max. 8388607)
- 242 compressed objects within 3 object streams
- 140 named destinations out of 1000 (max. 500000)
+ 277 PDF objects out of 1000 (max. 8388607)
+ 243 compressed objects within 3 object streams
+ 141 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
