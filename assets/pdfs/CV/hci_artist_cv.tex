@@ -38,6 +38,15 @@
   urlcolor=blue
 }
 
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{} % Clear all header and footer fields
+\fancyfoot[C]{\thepage} % Page number in center of footer
+\renewcommand{\headrulewidth}{0pt} % Remove header line
+\renewcommand{\footrulewidth}{0pt} % Remove footer line
+
+%\usepackage{fontspec}
+
 \setlength{\textwidth}{5.1in} % Text width of the document
 \setlength{\textheight}{10in}
 
@@ -54,70 +63,57 @@
 \moveleft.5\hoffset\centerline{\footnotesize (617) 595 6680}
 
 
+
 \begin{resume}
 
-\input{sections/artistic_pub_for_lit} 
-
-\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
-
-\section{TEACHING}
-
-	\input{sections/rcm_teaching} 
-	\input{sections/virginia_teaching} 
-	\input{sections/teaching_uoft} 
-	\input{sections/guest_teaching}
-	\input{sections/mentorship}
-
-\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
-	
-	\input{sections/education_for_lit}
-
-
+\input{sections/education}
+\input{sections/research}
 \input{sections/art_residencies}
 
 \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
 
+\section{PUBLICATIONS + CREATIVE WORK}
+	\input{sections/academic_pub}
+	\input{sections/artistic_pub} 
 
 
-
-
-
-\input{sections/editorial}
-
-
-
-
+\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
 
 \section{GRANTS \& AWARDS}
 	\input{sections/combined_awards}
+
+\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+
+\section{TEACHING }
+	\input{sections/rcm_teaching} 
+	\input{sections/teaching_uoft} 
+	\input{sections/virginia_teaching} 
+	\input{sections/guest_teaching}
+	\input{sections/mentorship}
 	
-
+\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
+\input{sections/combined_talks}
 \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
 
-	
-	 \section{EVENTS + TALKS}
-  \input{sections/literary_events}
- %\input{sections/exhibitions_performances}
+\section{SERVICE, EDITORIAL, and CURATORIAL APPOINTMENTS}
+\input{sections/academic_service}
+\input{sections/artistic_service}
+ 
+   \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt} 
 
+%\section{ARTS EXPERIENCE}
 
-%\input{sections/research}
-%\input{sections/academic_pub}
+%\input{sections/other_artistic_training}
+\input{sections/art_skills}
 
-\input{sections/academic_talks} 
-\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
-%\input{sections/academic_service}
+ 
+%  \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt} 
 
+%\input{sections/outreach}
 
-\section{MEDIA + PERFORMANCE}
-\input{sections/new_media_for_lit} 
+% \moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
 
-
-
-\moveleft\hoffset\vbox{\hrule width\resumewidth height 1pt}
-
-\input{sections/literary_references}
-
-
+%\input{sections/press}
 
 \end{resume}
 \end{document}
