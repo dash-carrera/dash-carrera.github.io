@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>ml5 Face Clouds Dual</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+    background: radial-gradient(circle at 20% 20%, #2a3342 0%, #11151d 45%, #090b10 100%);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    color: rgba(255, 255, 255, 0.9);
+  }
+  #wrap {
+    position: relative;
+    width: min(96vw, 1280px);
+    aspect-ratio: 8 / 3;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    background: #000;
+  }
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  #status {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 6px 8px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="status">Loading model...</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script>
+    new p5((p) => {
+      const PANEL_W = 640;
+      const PANEL_H = 480;
+      const W = PANEL_W * 2;
+      const H = PANEL_H;
+      const MIRROR = true;
+
+      const CLOUD_W = 420;
+      const CLOUD_H = 260;
+      const CLOUD_DRAW_W = 430;
+      const CLOUD_DRAW_H = 300;
+      const STOP_REGEN_MS = 250;
+      const RIGHT_MOVE_THRESHOLD_PX = 12;
+      const RIGHT_MOVE_COOLDOWN_MS = 120;
+
+      const FADE_IN = 100;
+      const FADE_OUT = 100;
+      const ALIVE_CORE = 500;
+      const ALIVE_EDGE = 150;
+      const ALIVE_WISP = 60;
+      const SPAWN_INTERVAL = 4;
+
+      const cloudColors = [
+        [255, 255, 255], [252, 252, 250], [248, 246, 242],
+        [242, 240, 236], [235, 234, 232], [225, 225, 228],
+        [215, 216, 220], [232, 235, 238], [255, 252, 245]
+      ];
+
+      let video;
+      let facemesh;
+      let predictions = [];
+      let modelLoaded = false;
+      const statusEl = document.getElementById('status');
+
+      let stopPg;
+      let clickPg;
+      let active = [];
+      let clickFrame = 0;
+      let clickT = 0;
+      let lastStopGen = 0;
+      let lastRightMoveGen = 0;
+      let lastFaceCenter = null;
+
+      function cloudSDF(x, y, time, cx, cy) {
+        const nx = (x - cx) / 120;
+        const ny = (y - cy) / 70;
+        let d = nx * nx + ny * ny * 1.7;
+        const ns = 0.03;
+        d -= (p.noise(x * ns, y * ns * 1.4, time * 0.4) - 0.5) * 1.1;
+        d -= (p.noise(x * ns * 2.2 + 40, y * ns * 2.2 + 40, time * 0.25) - 0.5) * 0.5;
+        d -= (p.noise(x * ns * 0.5 + 80, y * ns * 0.5 + 80, time * 0.15) - 0.5) * 0.65;
+        return d;
+      }
+
+      function bakeStroke(s) {
+        const hw = s.len * 0.5;
+        const hh = s.thick * 0.5;
+        const steps = 26;
+        const frayAmt = s.thick * 0.44;
+        const nOff = p.random(1000);
+        const nScale = 0.22;
+
+        const topVerts = [];
+        const botVerts = [];
+        const rightVerts = [];
+        const leftVerts = [];
+
+        for (let i = 0; i <= steps; i++) {
+          const tt = i / steps;
+          const bx = p.lerp(-hw, hw, tt);
+          const et = Math.min(1, Math.min(tt, 1 - tt) * 10);
+          topVerts.push([bx, -hh * et + (p.noise(nOff + tt * nScale * 5) - 0.5) * 2 * frayAmt * et]);
+          botVerts.unshift([bx, hh * et + (p.noise(nOff + 50 + tt * nScale * 5) - 0.5) * 2 * frayAmt * et]);
+        }
+        for (let i = 0; i <= 6; i++) {
+          const tt = i / 6;
+          const by = p.lerp(-hh, hh, tt);
+          rightVerts.push([hw + (p.noise(nOff + 200 + tt * nScale * 4) - 0.5) * frayAmt * 1.2, by]);
+          leftVerts.unshift([-hw + (p.noise(nOff + 300 + tt * nScale * 4) - 0.5) * frayAmt * 1.2, by]);
+        }
+        s.geo = { topVerts, botVerts, rightVerts, leftVerts };
+      }
+
+      function drawStroke(s, alpha, g) {
+        if (!s.geo || !s.col || alpha < 1) return;
+        const r = s.col[0];
+        const gv = s.col[1];
+        const b_ = s.col[2];
+        const topVerts = s.geo.topVerts;
+        const botVerts = s.geo.botVerts;
+        const rightVerts = s.geo.rightVerts;
+        const leftVerts = s.geo.leftVerts;
+
+        g.push();
+        g.translate(s.x, s.y);
+        g.rotate(s.angle);
+        g.noStroke();
+        g.fill(r, gv, b_, alpha);
+        g.beginShape();
+        for (const v of topVerts) g.vertex(v[0], v[1]);
+        for (const v of rightVerts) g.vertex(v[0], v[1]);
+        for (const v of botVerts) g.vertex(v[0], v[1]);
+        for (const v of leftVerts) g.vertex(v[0], v[1]);
+        g.endShape(p.CLOSE);
+        g.pop();
+      }
+
+      function spawnStrokeForCloud(time, cx, cy) {
+        const x = p.random(cx - 170, cx + 170);
+        const y = p.random(cy - 100, cy + 100);
+        const d = cloudSDF(x, y, time, cx, cy);
+
+        let aliveFrames;
+        let len;
+        let thick;
+        let angle;
+        let col;
+        let alpha;
+
+        if (d < 0.0) {
+          col = cloudColors[p.floor(p.random(0, 4))];
+          len = p.random(35, 95);
+          thick = p.random(12, 28);
+          angle = p.random(-0.3, 0.3);
+          alpha = p.random(120, 220);
+          aliveFrames = ALIVE_CORE;
+        } else if (d < 0.55) {
+          const colIdx = p.constrain(p.floor(p.map(d, 0, 0.55, 2, 6)), 2, 6);
+          col = cloudColors[colIdx];
+          len = p.random(28, 82);
+          thick = p.random(9, 22);
+          angle = p.random(-0.4, 0.4);
+          alpha = p.random(95, 190);
+          aliveFrames = Math.round(p.lerp(ALIVE_CORE, ALIVE_EDGE, d / 0.55));
+        } else if (d < 0.82) {
+          col = cloudColors[p.floor(p.random(0, 5))];
+          len = p.random(12, 48);
+          thick = p.random(4, 12);
+          angle = p.random(-p.HALF_PI, p.HALF_PI);
+          alpha = p.random(40, 120);
+          aliveFrames = Math.round(p.lerp(ALIVE_EDGE, ALIVE_WISP, (d - 0.55) / 0.27));
+        } else {
+          return null;
+        }
+
+        const s = { x, y, len, thick, angle, col, alpha, aliveFrames, frame: 0, phase: 'in' };
+        bakeStroke(s);
+        return s;
+      }
+
+      function generateStopCloud() {
+        const cx = CLOUD_W * 0.5;
+        const cy = CLOUD_H * 0.5;
+        stopPg.clear();
+        let count = 0;
+        let attempts = 0;
+        while (count < 520 && attempts < 7000) {
+          const s = spawnStrokeForCloud(0, cx, cy);
+          if (s) {
+            drawStroke(s, s.alpha, stopPg);
+            count++;
+          }
+          attempts++;
+        }
+      }
+
+      function prefillClickCloud() {
+        const cx = CLOUD_W * 0.5;
+        const cy = CLOUD_H * 0.5;
+        clickPg.clear();
+        active = [];
+        let attempts = 0;
+        while (active.length < 520 && attempts < 7000) {
+          const s = spawnStrokeForCloud(0, cx, cy);
+          if (s) {
+            s.phase = 'alive';
+            s.frame = Math.floor(p.random(0, s.aliveFrames));
+            drawStroke(s, s.alpha, clickPg);
+            active.push(s);
+          }
+          attempts++;
+        }
+      }
+
+      function generateClickCloudStep() {
+        p.randomSeed(Date.now());
+        p.noiseSeed(Date.now());
+        clickFrame = 0;
+        clickT = 0;
+        prefillClickCloud();
+      }
+
+      function updateClickCloudContinuous() {
+        clickFrame++;
+        clickT += 0.008;
+        const cx = CLOUD_W * 0.5;
+        const cy = CLOUD_H * 0.5;
+
+        if (clickFrame % SPAWN_INTERVAL === 0) {
+          const s = spawnStrokeForCloud(clickT, cx, cy);
+          if (s) active.push(s);
+        }
+
+        clickPg.loadPixels();
+        const px = clickPg.pixels;
+        for (let i = 3; i < px.length; i += 4) {
+          if (px[i] > 0) px[i] = Math.max(0, px[i] - 0.25);
+        }
+        clickPg.updatePixels();
+
+        for (let i = active.length - 1; i >= 0; i--) {
+          const s = active[i];
+          s.frame++;
+
+          let opacity;
+          if (s.phase === 'in') {
+            opacity = p.map(s.frame, 0, FADE_IN, 0, 1);
+            if (s.frame >= FADE_IN) {
+              s.phase = 'alive';
+              s.frame = 0;
+            }
+          } else if (s.phase === 'alive') {
+            opacity = 1;
+            if (s.frame >= s.aliveFrames) {
+              s.phase = 'out';
+              s.frame = 0;
+            }
+          } else {
+            opacity = p.map(s.frame, 0, FADE_OUT, 1, 0);
+            if (s.frame >= FADE_OUT) {
+              active.splice(i, 1);
+              continue;
+            }
+          }
+
+          const shouldDraw = s.phase !== 'alive' || s.frame === 1;
+          if (shouldDraw) drawStroke(s, Math.round(s.alpha * opacity), clickPg);
+        }
+      }
+
+      function getPrimaryFaceCenter(scaleX, scaleY) {
+        if (!predictions || predictions.length === 0) return null;
+        const mesh = predictions[0].scaledMesh;
+        if (!mesh || mesh.length === 0) return null;
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        for (const pt of mesh) {
+          if (!pt) continue;
+          if (pt[0] < minX) minX = pt[0];
+          if (pt[1] < minY) minY = pt[1];
+          if (pt[0] > maxX) maxX = pt[0];
+          if (pt[1] > maxY) maxY = pt[1];
+        }
+        if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) return null;
+
+        return {
+          x: ((minX + maxX) * 0.5) * scaleX,
+          y: ((minY + maxY) * 0.5) * scaleY
+        };
+      }
+
+      function panelToCanvasX(x, panelOffset, scaleX) {
+        let px = x * scaleX;
+        if (MIRROR) px = PANEL_W - px;
+        return panelOffset + px;
+      }
+
+      function drawPanelVideo(offsetX) {
+        p.push();
+        p.translate(offsetX, 0);
+        if (MIRROR) {
+          p.translate(PANEL_W, 0);
+          p.scale(-1, 1);
+        }
+        p.image(video, 0, 0, PANEL_W, H);
+        p.pop();
+      }
+
+      function drawCloudOverlay(texture, panelOffset, scaleX, scaleY) {
+        for (const face of predictions) {
+          const mesh = face.scaledMesh;
+          if (!mesh || mesh.length === 0) continue;
+
+          let minX = Infinity;
+          let minY = Infinity;
+          let maxX = -Infinity;
+          let maxY = -Infinity;
+
+          for (const pt of mesh) {
+            if (!pt) continue;
+            if (pt[0] < minX) minX = pt[0];
+            if (pt[1] < minY) minY = pt[1];
+            if (pt[0] > maxX) maxX = pt[0];
+            if (pt[1] > maxY) maxY = pt[1];
+          }
+
+          if (!isFinite(minX) || !isFinite(minY) || !isFinite(maxX) || !isFinite(maxY)) continue;
+
+          const centerX = panelToCanvasX((minX + maxX) * 0.5, panelOffset, scaleX);
+          const centerY = ((minY + maxY) * 0.5) * scaleY;
+          p.image(
+            texture,
+            centerX - CLOUD_DRAW_W * 0.5,
+            centerY - CLOUD_DRAW_H * 0.52,
+            CLOUD_DRAW_W,
+            CLOUD_DRAW_H
+          );
+        }
+      }
+
+      p.setup = () => {
+        const canvas = p.createCanvas(W, H);
+        canvas.parent('wrap');
+
+        video = p.createCapture({ video: { facingMode: 'user' }, audio: false }, () => {
+          statusEl.textContent = 'Camera ready, loading model...';
+        });
+        video.size(PANEL_W, PANEL_H);
+        video.hide();
+
+        facemesh = ml5.facemesh(video, () => {
+          modelLoaded = true;
+          statusEl.textContent = 'Model ready';
+        });
+        facemesh.on('predict', (results) => {
+          predictions = results;
+        });
+
+        stopPg = p.createGraphics(CLOUD_W, CLOUD_H);
+        stopPg.colorMode(p.RGB, 255, 255, 255, 255);
+        clickPg = p.createGraphics(CLOUD_W, CLOUD_H);
+        clickPg.colorMode(p.RGB, 255, 255, 255, 255);
+
+        generateStopCloud();
+        prefillClickCloud();
+        lastStopGen = p.millis();
+        lastRightMoveGen = p.millis();
+      };
+
+      p.draw = () => {
+        p.background(0);
+
+        const vw = video?.elt?.videoWidth || PANEL_W;
+        const vh = video?.elt?.videoHeight || PANEL_H;
+        const scaleX = PANEL_W / vw;
+        const scaleY = H / vh;
+
+        if (p.millis() - lastStopGen >= STOP_REGEN_MS) {
+          generateStopCloud();
+          lastStopGen = p.millis();
+        }
+        updateClickCloudContinuous();
+
+        const currentCenter = getPrimaryFaceCenter(scaleX, scaleY);
+        if (currentCenter) {
+          if (!lastFaceCenter) {
+            lastFaceCenter = currentCenter;
+          } else {
+            const dx = currentCenter.x - lastFaceCenter.x;
+            const dy = currentCenter.y - lastFaceCenter.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const cooldownDone = (p.millis() - lastRightMoveGen) >= RIGHT_MOVE_COOLDOWN_MS;
+            if (dist >= RIGHT_MOVE_THRESHOLD_PX && cooldownDone) {
+              generateClickCloudStep();
+              lastRightMoveGen = p.millis();
+              lastFaceCenter = currentCenter;
+            }
+          }
+        } else {
+          lastFaceCenter = null;
+        }
+
+        drawPanelVideo(0);
+        drawPanelVideo(PANEL_W);
+
+        drawCloudOverlay(stopPg, 0, scaleX, scaleY);
+        drawCloudOverlay(clickPg, PANEL_W, scaleX, scaleY);
+
+        p.stroke(255, 255, 255, 120);
+        p.strokeWeight(1);
+        p.line(PANEL_W, 0, PANEL_W, H);
+
+        if (!modelLoaded) {
+          statusEl.textContent = 'Loading model...';
+        } else {
+          statusEl.textContent = `Faces detected: ${predictions.length} | Left: stopmotion | Right: cloud-click`;
+        }
+      };
+    });
+  </script>
+</body>
+</html>
