@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  11 MAR 2026 22:04
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (TeX Live 2025) (preloaded format=pdflatex 2025.3.8)  18 MAR 2026 23:39
 entering extended mode
  \write18 enabled.
  file:line:error style messages enabled.
@@ -752,7 +752,10 @@ Underfull \hbox (badness 10000) in paragraph at lines 3--1
 
 [11]) (./sections/academic_service.tex
 
-[12]) (./sections/artistic_service.tex) (./sections/art_skills.tex
+[12
+
+
+]) (./sections/artistic_service.tex) (./sections/art_skills.tex
 Overfull \hbox (4.8399pt too wide) in paragraph at lines 17--18
 []\OT1/cmr/m/n/10 Experience with sensor-driven and com-puter vi-sion based in-
 ter-ac-tion (Max/MSP,
@@ -761,7 +764,6 @@ ter-ac-tion (Max/MSP,
 
 
 [13
-
 
 
 
@@ -780,7 +782,6 @@ Overfull \hbox (7.08989pt too wide) in paragraph at lines 23--24
 
 
 
-
 ]
  ***********
 LaTeX2e <2024-11-01> patch level 2
@@ -790,7 +791,7 @@ L3 programming layer <2025-01-18>
 Here is how much of TeX's memory you used:
  8888 strings out of 474662
  140424 string characters out of 5751110
- 537348 words of memory out of 5000000
+ 538348 words of memory out of 5000000
  31690 multiletter control sequences out of 15000+600000
  561689 words of font info for 45 fonts, out of 8000000 for 9000
  319 hyphenation exceptions out of 8191
@@ -803,7 +804,7 @@ blic/amsfonts/cm/cmr10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/type1
 /public/amsfonts/cm/cmr8.pfb></usr/local/texlive/2025basic/texmf-dist/fonts/typ
 e1/public/amsfonts/cm/cmsl10.pfb></usr/local/texlive/2025basic/texmf-dist/fonts
 /type1/public/amsfonts/cm/cmti10.pfb>
-Output written on hci_artist_cv.pdf (14 pages, 153865 bytes).
+Output written on hci_artist_cv.pdf (14 pages, 153964 bytes).
 PDF statistics:
  271 PDF objects out of 1000 (max. 8388607)
  238 compressed objects within 3 object streams
