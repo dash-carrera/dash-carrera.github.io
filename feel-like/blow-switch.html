@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>iPad Gallery Blow Switch</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+  body {
+    min-height: 100vh;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+    color: rgba(255, 255, 255, 0.92);
+    background:
+      radial-gradient(circle at 18% 18%, rgba(42, 60, 92, 0.55), transparent 32%),
+      radial-gradient(circle at 82% 16%, rgba(0, 110, 110, 0.2), transparent 24%),
+      #030507;
+  }
+  #wrap {
+    position: fixed;
+    inset: 0;
+  }
+  canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  #status {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    padding: 8px 10px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 6px;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="status">Loading camera...</div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script>
+    new p5((p) => {
+      const MIRROR = true;
+      const FACE_OVAL = [
+        10, 338, 297, 332, 284, 251, 389, 356, 454, 323,
+        361, 288, 397, 365, 379, 378, 400, 377, 152, 148,
+        176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
+        162, 21, 54, 103, 67, 109
+      ];
+      const FEATURE_POINTS = [33, 133, 362, 263, 1, 61, 291];
+      const CALIBRATION_MS = 2600;
+      const COOLDOWN_MS = 1400;
+      const QUIET_RESET_MS = 420;
+
+      let video;
+      let facemesh;
+      let predictions = [];
+      let modelLoaded = false;
+      let audioContext = null;
+      let analyser = null;
+      let timeData = null;
+      let freqData = null;
+      let smoothedMic = 0;
+      let switchOn = false;
+      let flashUntilMs = 0;
+      const statusEl = document.getElementById('status');
+
+      const detector = {
+        state: 'calibrating',
+        baselineRms: 0.01,
+        varianceRms: 0.004,
+        baselineAttack: 0.0025,
+        baselineFlatness: 0.28,
+        baselineLowRatio: 0.55,
+        fastRms: 0,
+        slowRms: 0,
+        blowConfidence: 0,
+        candidateMs: 0,
+        cooldownUntil: 0,
+        quietMs: 0,
+        armed: false,
+        calibrating: true,
+        calibrationStartedAt: 0,
+        readyAt: 0,
+        liveRms: 0,
+        liveAttack: 0,
+        liveFlatness: 0,
+        liveLowRatio: 0,
+        peakiness: 0
+      };
+
+      function dist3(a, b) {
+        return Math.hypot((a[0] || 0) - (b[0] || 0), (a[1] || 0) - (b[1] || 0), (a[2] || 0) - (b[2] || 0));
+      }
+
+      function freqIndexFor(hz) {
+        if (!audioContext || !analyser) return 0;
+        const nyquist = audioContext.sampleRate * 0.5;
+        return p.constrain(Math.round((hz / nyquist) * analyser.frequencyBinCount), 0, analyser.frequencyBinCount - 1);
+      }
+
+      function rangeEnergy(startHz, endHz) {
+        if (!freqData) return 0;
+        const start = freqIndexFor(startHz);
+        const end = Math.max(start + 1, freqIndexFor(endHz));
+        let total = 0;
+        for (let i = start; i <= end; i++) total += freqData[i] / 255;
+        return total / Math.max(1, end - start + 1);
+      }
+
+      function spectralFlatness(startHz, endHz) {
+        if (!freqData) return 0;
+        const start = freqIndexFor(startHz);
+        const end = Math.max(start + 2, freqIndexFor(endHz));
+        let logSum = 0;
+        let linearSum = 0;
+        let count = 0;
+        for (let i = start; i <= end; i++) {
+          const v = Math.max(1e-4, freqData[i] / 255);
+          logSum += Math.log(v);
+          linearSum += v;
+          count++;
+        }
+        if (!count || linearSum <= 0) return 0;
+        const geo = Math.exp(logSum / count);
+        const arith = linearSum / count;
+        return p.constrain(geo / arith, 0, 1);
+      }
+
+      function spectralPeakiness(startHz, endHz) {
+        if (!freqData) return 1;
+        const start = freqIndexFor(startHz);
+        const end = Math.max(start + 2, freqIndexFor(endHz));
+        let sum = 0;
+        let peak = 0;
+        let count = 0;
+        for (let i = start; i <= end; i++) {
+          const v = freqData[i] / 255;
+          sum += v;
+          peak = Math.max(peak, v);
+          count++;
+        }
+        const avg = sum / Math.max(1, count);
+        return avg > 0 ? peak / avg : 1;
+      }
+
+      function startMic() {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AudioContextClass) {
+          statusEl.textContent = 'Camera ready | Mic unsupported in this browser';
+          return;
+        }
+
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then((stream) => {
+            audioContext = new AudioContextClass();
+            const source = audioContext.createMediaStreamSource(stream);
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 1024;
+            analyser.smoothingTimeConstant = 0.5;
+            timeData = new Uint8Array(analyser.fftSize);
+            freqData = new Uint8Array(analyser.frequencyBinCount);
+            source.connect(analyser);
+            detector.calibrationStartedAt = p.millis();
+            detector.state = 'calibrating';
+          })
+          .catch(() => {
+            statusEl.textContent = 'Camera ready | Mic permission denied';
+          });
+      }
+
+      function sampleAudio(deltaMs) {
+        if (!analyser || !timeData || !freqData) {
+          detector.blowConfidence = p.lerp(detector.blowConfidence, 0, 0.12);
+          return;
+        }
+
+        analyser.getByteTimeDomainData(timeData);
+        analyser.getByteFrequencyData(freqData);
+
+        let sum = 0;
+        for (let i = 0; i < timeData.length; i++) {
+          const centered = (timeData[i] - 128) / 128;
+          sum += centered * centered;
+        }
+        const rms = Math.sqrt(sum / timeData.length);
+        detector.fastRms = p.lerp(detector.fastRms, rms, 0.36);
+        detector.slowRms = p.lerp(detector.slowRms, rms, 0.045);
+        detector.liveRms = detector.fastRms;
+        detector.liveAttack = Math.max(0, detector.fastRms - detector.slowRms);
+        detector.liveFlatness = spectralFlatness(150, 4800);
+        const low = rangeEnergy(120, 900);
+        const mid = rangeEnergy(900, 2600);
+        const high = rangeEnergy(2600, 7000);
+        detector.liveLowRatio = (low + mid) / Math.max(0.001, low + mid + high);
+        detector.peakiness = spectralPeakiness(150, 4800);
+
+        if (detector.calibrating) {
+          const progress = p.constrain((p.millis() - detector.calibrationStartedAt) / CALIBRATION_MS, 0, 1);
+          const weight = progress < 0.2 ? 0.16 : 0.07;
+          detector.baselineRms = detector.baselineRms === 0 ? detector.liveRms : p.lerp(detector.baselineRms, detector.liveRms, weight);
+          detector.varianceRms = p.lerp(detector.varianceRms, Math.abs(detector.liveRms - detector.baselineRms), 0.08);
+          detector.baselineAttack = p.lerp(detector.baselineAttack, detector.liveAttack, 0.08);
+          detector.baselineFlatness = p.lerp(detector.baselineFlatness, detector.liveFlatness, 0.08);
+          detector.baselineLowRatio = p.lerp(detector.baselineLowRatio, detector.liveLowRatio, 0.08);
+          detector.blowConfidence = p.lerp(detector.blowConfidence, 0, 0.2);
+
+          if (progress >= 1) {
+            detector.calibrating = false;
+            detector.state = 'ready';
+            detector.armed = true;
+            detector.readyAt = p.millis();
+          }
+          return;
+        }
+
+        const quietThreshold = detector.baselineRms + Math.max(detector.varianceRms * 1.6, 0.006);
+        const loudThreshold = detector.baselineRms + Math.max(detector.varianceRms * 5.8, 0.018);
+        const attackThreshold = detector.baselineAttack + Math.max(detector.baselineAttack * 3.5, 0.007);
+        const strongAttackThreshold = detector.baselineAttack + Math.max(detector.baselineAttack * 6.2, 0.014);
+        const flatnessThreshold = Math.max(detector.baselineFlatness + 0.09, 0.26);
+        const ratioThreshold = Math.max(detector.baselineLowRatio + 0.05, 0.66);
+
+        const loudnessScore = p.constrain(p.map(detector.liveRms, quietThreshold, loudThreshold, 0, 1), 0, 1);
+        const attackScore = p.constrain(p.map(detector.liveAttack, attackThreshold, strongAttackThreshold, 0, 1), 0, 1);
+        const flatnessScore = p.constrain(p.map(detector.liveFlatness, flatnessThreshold, 0.72, 0, 1), 0, 1);
+        const ratioScore = p.constrain(p.map(detector.liveLowRatio, ratioThreshold, 0.95, 0, 1), 0, 1);
+        const tonalPenalty = p.constrain(p.map(detector.peakiness, 2.2, 6.5, 1, 0), 0, 1);
+
+        const composite = (
+          loudnessScore * 0.34 +
+          attackScore * 0.3 +
+          flatnessScore * 0.2 +
+          ratioScore * 0.16
+        ) * tonalPenalty;
+
+        detector.blowConfidence = p.lerp(detector.blowConfidence, composite, 0.18);
+
+        const candidate =
+          loudnessScore > 0.82 &&
+          attackScore > 0.68 &&
+          flatnessScore > 0.42 &&
+          ratioScore > 0.34 &&
+          tonalPenalty > 0.35;
+
+        if (candidate && detector.armed && p.millis() >= detector.cooldownUntil) {
+          detector.candidateMs += deltaMs;
+        } else {
+          detector.candidateMs = Math.max(0, detector.candidateMs - deltaMs * 1.5);
+        }
+
+        if (!candidate && detector.liveRms < quietThreshold) {
+          detector.quietMs += deltaMs;
+        } else {
+          detector.quietMs = 0;
+        }
+
+        if (!detector.armed && detector.quietMs >= QUIET_RESET_MS && p.millis() >= detector.cooldownUntil) {
+          detector.armed = true;
+          detector.state = 'ready';
+        }
+
+        if (
+          detector.armed &&
+          detector.candidateMs >= 90 &&
+          p.millis() >= detector.cooldownUntil
+        ) {
+          switchOn = !switchOn;
+          detector.armed = false;
+          detector.candidateMs = 0;
+          detector.quietMs = 0;
+          detector.cooldownUntil = p.millis() + COOLDOWN_MS;
+          detector.state = 'cooldown';
+          flashUntilMs = p.millis() + 240;
+        }
+
+        if (detector.state === 'cooldown' && p.millis() >= detector.cooldownUntil) {
+          detector.state = detector.armed ? 'ready' : 'ready';
+        }
+
+        const safeToAdapt = detector.state !== 'cooldown' && detector.candidateMs < 25 && detector.liveRms < loudThreshold * 0.92;
+        if (safeToAdapt) {
+          detector.baselineRms = p.lerp(detector.baselineRms, detector.liveRms, 0.006);
+          detector.varianceRms = p.lerp(detector.varianceRms, Math.abs(detector.liveRms - detector.baselineRms), 0.01);
+          detector.baselineAttack = p.lerp(detector.baselineAttack, detector.liveAttack, 0.008);
+          detector.baselineFlatness = p.lerp(detector.baselineFlatness, detector.liveFlatness, 0.006);
+          detector.baselineLowRatio = p.lerp(detector.baselineLowRatio, detector.liveLowRatio, 0.006);
+        }
+
+        smoothedMic = p.lerp(smoothedMic, p.constrain(detector.liveRms * 18, 0, 1), 0.15);
+      }
+
+      function drawFaceOverlay(viewX, viewY, viewW, viewH) {
+        const vw = video?.elt?.videoWidth || 640;
+        const vh = video?.elt?.videoHeight || 480;
+        const scaleX = viewW / vw;
+        const scaleY = viewH / vh;
+
+        p.push();
+        p.noFill();
+        p.stroke(120, 245, 255);
+        p.strokeWeight(2);
+
+        for (const face of predictions) {
+          const mesh = face.scaledMesh;
+          if (!mesh || mesh.length === 0) continue;
+
+          let minX = Infinity;
+          let minY = Infinity;
+          let maxX = -Infinity;
+          let maxY = -Infinity;
+
+          p.beginShape();
+          for (const idx of FACE_OVAL) {
+            const pt = mesh[idx];
+            if (!pt) continue;
+            let x = viewX + (pt[0] * scaleX);
+            const y = viewY + (pt[1] * scaleY);
+            if (MIRROR) x = viewX + viewW - (pt[0] * scaleX);
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x);
+            maxY = Math.max(maxY, y);
+            p.vertex(x, y);
+          }
+          p.endShape(p.CLOSE);
+
+          p.stroke(149, 255, 190);
+          p.rect(minX - 8, minY - 8, (maxX - minX) + 16, (maxY - minY) + 16, 10);
+
+          p.noStroke();
+          p.fill(255, 220, 130);
+          for (const idx of FEATURE_POINTS) {
+            const pt = mesh[idx];
+            if (!pt) continue;
+            let x = viewX + (pt[0] * scaleX);
+            const y = viewY + (pt[1] * scaleY);
+            if (MIRROR) x = viewX + viewW - (pt[0] * scaleX);
+            p.circle(x, y, 5);
+          }
+
+          p.noFill();
+          p.stroke(120, 245, 255);
+        }
+        p.pop();
+      }
+
+      function drawMeter(x, y, w, h, label, value, accent, subtitle) {
+        const clamped = p.constrain(value, 0, 1);
+        p.push();
+        p.noStroke();
+        p.fill(14, 18, 24, 235);
+        p.rect(x, y, w, h, 18);
+
+        p.fill(255, 255, 255, 170);
+        p.textAlign(p.LEFT, p.TOP);
+        p.textSize(Math.max(12, h * 0.18));
+        p.text(label, x + 16, y + 14);
+
+        p.textAlign(p.RIGHT, p.TOP);
+        p.fill(accent[0], accent[1], accent[2]);
+        p.text(Math.round(clamped * 100) + '%', x + w - 16, y + 14);
+
+        const barX = x + 16;
+        const barY = y + h - 26;
+        const barW = w - 32;
+        p.fill(255, 255, 255, 24);
+        p.rect(barX, barY, barW, 10, 999);
+        p.fill(accent[0], accent[1], accent[2]);
+        p.rect(barX, barY, barW * clamped, 10, 999);
+
+        if (subtitle) {
+          p.fill(255, 255, 255, 90);
+          p.textAlign(p.LEFT, p.BOTTOM);
+          p.textSize(Math.max(10, h * 0.14));
+          p.text(subtitle, x + 16, y + h - 34);
+        }
+        p.pop();
+      }
+
+      function detectorStateLabel() {
+        if (detector.calibrating) return 'Calibrating';
+        if (detector.state === 'cooldown') return 'Cooldown';
+        return detector.armed ? 'Ready' : 'Waiting reset';
+      }
+
+      function drawSwitchInterface() {
+        const margin = Math.min(p.width, p.height) * 0.05;
+        const gap = Math.min(p.width, p.height) * 0.025;
+        const leftW = p.width < 960 ? p.width - margin * 2 : p.width * 0.56;
+        const rightW = p.width < 960 ? p.width - margin * 2 : p.width - margin * 2 - leftW - gap;
+        const leftX = margin;
+        const rightX = p.width < 960 ? margin : leftX + leftW + gap;
+        const topY = margin + 32;
+
+        const switchCardH = p.height < 860 ? p.height * 0.42 : p.height * 0.48;
+        const switchCardY = topY;
+        const diagnosticsY = p.width < 960 ? switchCardY + switchCardH + gap : topY;
+        const previewY = p.width < 960 ? diagnosticsY + 250 + gap : switchCardY + switchCardH + gap;
+        const previewW = p.width < 960 ? rightW : Math.min(rightW, 360);
+        const previewH = previewW * 0.75;
+
+        p.push();
+        p.noStroke();
+        p.fill(255);
+        p.textAlign(p.LEFT, p.TOP);
+        p.textSize(Math.max(28, p.width * 0.03));
+        p.text('Blow Switch', leftX, margin);
+        p.fill(255, 255, 255, 110);
+        p.textSize(14);
+        p.text('Blow directly into the mic to toggle the switch. Built to resist room noise.', leftX, margin + 34);
+        p.pop();
+
+        p.push();
+        p.noStroke();
+        p.fill(12, 16, 20, 235);
+        p.rect(leftX, switchCardY, leftW, switchCardH, 26);
+        p.pop();
+
+        const orbSize = Math.min(leftW, switchCardH) * (p.width < 960 ? 0.32 : 0.38);
+        const orbX = leftX + leftW * 0.5;
+        const orbY = switchCardY + switchCardH * 0.48;
+        const glow = switchOn ? [116, 255, 186] : [255, 96, 128];
+        const flashBoost = p.millis() < flashUntilMs ? 55 : 0;
+
+        p.push();
+        p.noStroke();
+        for (let i = 5; i >= 1; i--) {
+          const alpha = (switchOn ? 18 : 12) * i + flashBoost;
+          p.fill(glow[0], glow[1], glow[2], alpha);
+          p.circle(orbX, orbY, orbSize + i * 34);
+        }
+        p.fill(20, 22, 28);
+        p.circle(orbX, orbY, orbSize + 28);
+        p.fill(glow[0], glow[1], glow[2], switchOn ? 220 + flashBoost : 130 + flashBoost);
+        p.circle(orbX, orbY, orbSize);
+        p.pop();
+
+        p.push();
+        p.textAlign(p.CENTER, p.CENTER);
+        p.noStroke();
+        p.fill(255);
+        p.textSize(Math.max(38, orbSize * 0.2));
+        p.text(switchOn ? 'ON' : 'OFF', orbX, orbY);
+        p.fill(255, 255, 255, 140);
+        p.textSize(Math.max(14, orbSize * 0.07));
+        p.text(detectorStateLabel(), orbX, orbY + orbSize * 0.34);
+        p.pop();
+
+        const statusBoxW = Math.min(leftW * 0.76, 520);
+        const statusBoxH = 88;
+        const statusBoxX = orbX - statusBoxW * 0.5;
+        const statusBoxY = switchCardY + switchCardH - statusBoxH - 20;
+        p.push();
+        p.noStroke();
+        p.fill(255, 255, 255, 10);
+        p.rect(statusBoxX, statusBoxY, statusBoxW, statusBoxH, 18);
+        p.fill(255, 255, 255, 180);
+        p.textAlign(p.CENTER, p.TOP);
+        p.textSize(14);
+        p.text(
+          detector.calibrating
+            ? 'Learning room noise floor'
+            : detector.state === 'cooldown'
+              ? 'Triggered. Waiting for quiet reset'
+              : detector.armed
+                ? 'Ready for a direct blow'
+                : 'Waiting for the mic to settle',
+          orbX,
+          statusBoxY + 18
+        );
+        p.fill(255, 255, 255, 80);
+        p.textSize(12);
+        p.text('Conservative tuning reduces false triggers from gallery ambience', orbX, statusBoxY + 46);
+        p.pop();
+
+        drawMeter(rightX, diagnosticsY, rightW, 92, 'Blow confidence', detector.blowConfidence, [255, 163, 92], 'Multi-signal detector score');
+        drawMeter(rightX, diagnosticsY + 108, rightW, 92, 'Live mic energy', smoothedMic, [255, 102, 150], 'Fast RMS envelope');
+        drawMeter(rightX, diagnosticsY + 216, rightW, 92, 'Ambient baseline', p.constrain(detector.baselineRms * 18, 0, 1), [103, 178, 255], 'Learned room floor');
+        drawMeter(rightX, diagnosticsY + 324, rightW, 92, 'Noise profile', p.constrain((detector.liveFlatness * 0.65) + (detector.liveLowRatio * 0.35), 0, 1), [151, 255, 188], 'Broadband breath-like shape');
+
+        p.push();
+        p.noStroke();
+        p.fill(12, 16, 20, 235);
+        p.rect(rightX, previewY, previewW, previewH + 34, 22);
+        p.pop();
+
+        p.push();
+        if (MIRROR) {
+          p.translate(rightX + previewW, previewY + 16);
+          p.scale(-1, 1);
+          p.image(video, 0, 0, previewW, previewH);
+        } else {
+          p.image(video, rightX, previewY + 16, previewW, previewH);
+        }
+        p.pop();
+
+        drawFaceOverlay(rightX, previewY + 16, previewW, previewH);
+
+        p.push();
+        p.noStroke();
+        p.fill(255, 255, 255, 165);
+        p.textAlign(p.LEFT, p.TOP);
+        p.textSize(13);
+        p.text('Camera + face tracking preview', rightX + 16, previewY + previewH + 22);
+        p.pop();
+      }
+
+      p.setup = () => {
+        const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
+        canvas.parent('wrap');
+
+        video = p.createCapture({ video: { facingMode: 'user' }, audio: false }, () => {
+          statusEl.textContent = 'Camera ready, loading face model...';
+        });
+        video.size(640, 480);
+        video.hide();
+
+        facemesh = ml5.facemesh(video, () => {
+          modelLoaded = true;
+          statusEl.textContent = 'Face model ready';
+        });
+        facemesh.on('predict', (results) => {
+          predictions = results;
+        });
+
+        startMic();
+      };
+
+      p.draw = () => {
+        p.background(3, 5, 7);
+        sampleAudio(p.deltaTime || 16);
+        drawSwitchInterface();
+
+        if (!modelLoaded) {
+          statusEl.textContent = 'Loading face model...';
+        } else if (detector.calibrating) {
+          const secs = Math.max(0, (CALIBRATION_MS - (p.millis() - detector.calibrationStartedAt)) / 1000);
+          statusEl.textContent = `Faces: ${predictions.length} | Calibrating mic ${secs.toFixed(1)}s`;
+        } else {
+          statusEl.textContent = `Faces: ${predictions.length} | Switch ${switchOn ? 'ON' : 'OFF'} | ${detectorStateLabel()} | Blow ${Math.round(detector.blowConfidence * 100)}%`;
+        }
+      };
+
+      p.windowResized = () => {
+        p.resizeCanvas(window.innerWidth, window.innerHeight);
+      };
+    });
+  </script>
+</body>
+</html>
