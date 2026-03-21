@@ -2,561 +2,578 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>iPad Gallery Blow Switch</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>p5 Band Meter</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body {
     width: 100%;
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+    background: #05070a;
+    color: #f2f7ff;
+    font-family: Menlo, Consolas, monospace;
   }
   body {
-    min-height: 100vh;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    color: rgba(255, 255, 255, 0.92);
-    background:
-      radial-gradient(circle at 18% 18%, rgba(42, 60, 92, 0.55), transparent 32%),
-      radial-gradient(circle at 82% 16%, rgba(0, 110, 110, 0.2), transparent 24%),
-      #030507;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 14px;
   }
-  #wrap {
-    position: fixed;
-    inset: 0;
+  #app {
+    width: min(100%, 720px);
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    background: rgba(10, 14, 20, 0.92);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  }
+  h1 {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  p {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  #controls {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    min-height: 48px;
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: #121a24;
+    color: #f2f7ff;
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #status {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  #readouts {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .readoutCard {
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .readoutLabel {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.68);
+  }
+  .readoutValue {
+    margin-top: 6px;
+    font-size: 24px;
+  }
+  #meterWrap {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  #meterLabelRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  #meterLabel {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  #meterValue {
+    font-size: 28px;
+    color: #8fffc0;
+  }
+  #triggerStatus {
+    margin-bottom: 8px;
+    min-height: 24px;
+    font-size: 16px;
+    color: #ffd26e;
+  }
+  #triggerTime {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+    min-height: 18px;
+  }
+  #blownAwayStatus {
+    min-height: 24px;
+    font-size: 16px;
+    color: #8fffc0;
+  }
+  #resetCloudButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  #canvasWrap {
+    border-radius: 14px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
   canvas {
     display: block;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
   }
-  #status {
-    position: absolute;
-    top: 18px;
-    left: 18px;
-    padding: 8px 10px;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.16);
-    border-radius: 6px;
-    pointer-events: none;
+  @media (max-width: 900px) {
+    body {
+      padding: 8px;
+      align-items: flex-start;
+    }
+    #app {
+      padding: 14px;
+      border-radius: 14px;
+    }
+    h1 {
+      font-size: 17px;
+    }
+    p {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    #controls {
+      gap: 8px;
+    }
+    #controls button {
+      min-height: 44px;
+      padding: 10px 14px;
+      font-size: 15px;
+      flex: 1 1 180px;
+    }
+    #status {
+      width: 100%;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    #readouts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .readoutCard {
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .readoutLabel {
+      font-size: 10px;
+    }
+    .readoutValue {
+      font-size: 20px;
+    }
+    #meterWrap {
+      padding: 10px;
+    }
+    #meterLabelRow {
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    #meterValue {
+      font-size: 20px;
+    }
+    #resetCloudButton {
+      min-height: 40px;
+      font-size: 14px;
+      width: auto;
+    }
+  }
+  @media (max-width: 620px) {
+    #readouts {
+      grid-template-columns: 1fr;
+    }
+    #resetCloudButton {
+      width: 100%;
+    }
   }
 </style>
 </head>
 <body>
-  <div id="wrap">
-    <div id="status">Loading camera...</div>
-  </div>
+  <main id="app">
+    <h1>120-1800 Hz Mic Meter</h1>
+    <p>This standalone page uses p5.js and p5.sound to listen to microphone energy in the 120-1800 Hz band, display it as a live meter, and calibrate a blow threshold from your strongest input.</p>
+    <section id="readouts">
+      <div class="readoutCard">
+        <div class="readoutLabel">Live Band</div>
+        <div id="liveReadout" class="readoutValue">0%</div>
+      </div>
+      <div class="readoutCard">
+        <div class="readoutLabel">Calibration Peak</div>
+        <div id="peakReadout" class="readoutValue">0%</div>
+      </div>
+      <div class="readoutCard">
+        <div class="readoutLabel">Suggested Volume</div>
+        <div id="thresholdReadout" class="readoutValue">0%</div>
+      </div>
+    </section>
+    <section id="meterWrap">
+      <div id="meterLabelRow">
+        <div id="meterLabel">Band Energy</div>
+        <div id="meterValue">0%</div>
+      </div>
+      <div id="triggerStatus"></div>
+      <div id="triggerTime">Held for 0.00s</div>
+      <div id="blownAwayStatus"></div>
+      <div id="controls">
+        <button id="startButton">Start Mic</button>
+        <button id="calibrateButton">Calibrate Blow</button>
+        <button id="resetCloudButton" type="button">Reset</button>
+        <div id="status">Idle</div>
+      </div>
+      <div id="canvasWrap"></div>
+    </section>
+  </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
   <script>
+    const startButton = document.getElementById('startButton');
+    const calibrateButton = document.getElementById('calibrateButton');
+    const statusEl = document.getElementById('status');
+    const meterValueEl = document.getElementById('meterValue');
+    const liveReadoutEl = document.getElementById('liveReadout');
+    const peakReadoutEl = document.getElementById('peakReadout');
+    const thresholdReadoutEl = document.getElementById('thresholdReadout');
+    const triggerStatusEl = document.getElementById('triggerStatus');
+    const triggerTimeEl = document.getElementById('triggerTime');
+    const blownAwayStatusEl = document.getElementById('blownAwayStatus');
+    const resetCloudButton = document.getElementById('resetCloudButton');
+
     new p5((p) => {
-      const MIRROR = true;
-      const FACE_OVAL = [
-        10, 338, 297, 332, 284, 251, 389, 356, 454, 323,
-        361, 288, 397, 365, 379, 378, 400, 377, 152, 148,
-        176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
-        162, 21, 54, 103, 67, 109
-      ];
-      const FEATURE_POINTS = [33, 133, 362, 263, 1, 61, 291];
-      const CALIBRATION_MS = 2600;
-      const COOLDOWN_MS = 1400;
-      const QUIET_RESET_MS = 420;
+      const CALIBRATION_MS = 4000;
+      const THRESHOLD_DROP = 0.12;
+      const BLOWN_AWAY_MS = 1000;
 
-      let video;
-      let facemesh;
-      let predictions = [];
-      let modelLoaded = false;
-      let audioContext = null;
-      let analyser = null;
-      let timeData = null;
-      let freqData = null;
-      let smoothedMic = 0;
-      let switchOn = false;
-      let flashUntilMs = 0;
-      const statusEl = document.getElementById('status');
+      let mic = null;
+      let fft = null;
+      let smoothedBand = 0;
+      let started = false;
+      let calibrationActive = false;
+      let calibrationStartedAt = 0;
+      let calibrationPeak = 0;
+      let suggestedThreshold = 0;
+      let triggerLevel = 0;
+      let triggered = false;
+      let triggerStartedAt = null;
+      let triggerHeldMs = 0;
+      let triggeringMeter = 0;
+      let blownAway = false;
+      let cloudProgress = 0;
+      let cloudLatched = false;
+      let cloudPuffs = [];
 
-      const detector = {
-        state: 'calibrating',
-        baselineRms: 0.01,
-        varianceRms: 0.004,
-        baselineAttack: 0.0025,
-        baselineFlatness: 0.28,
-        baselineLowRatio: 0.55,
-        fastRms: 0,
-        slowRms: 0,
-        blowConfidence: 0,
-        candidateMs: 0,
-        cooldownUntil: 0,
-        quietMs: 0,
-        armed: false,
-        calibrating: true,
-        calibrationStartedAt: 0,
-        readyAt: 0,
-        liveRms: 0,
-        liveAttack: 0,
-        liveFlatness: 0,
-        liveLowRatio: 0,
-        peakiness: 0
-      };
-
-      function dist3(a, b) {
-        return Math.hypot((a[0] || 0) - (b[0] || 0), (a[1] || 0) - (b[1] || 0), (a[2] || 0) - (b[2] || 0));
+      function setStatus(text) {
+        statusEl.textContent = text;
       }
 
-      function freqIndexFor(hz) {
-        if (!audioContext || !analyser) return 0;
-        const nyquist = audioContext.sampleRate * 0.5;
-        return p.constrain(Math.round((hz / nyquist) * analyser.frequencyBinCount), 0, analyser.frequencyBinCount - 1);
+      function formatPct(value) {
+        return Math.round(p.constrain(value, 0, 1) * 100) + '%';
       }
 
-      function rangeEnergy(startHz, endHz) {
-        if (!freqData) return 0;
-        const start = freqIndexFor(startHz);
-        const end = Math.max(start + 1, freqIndexFor(endHz));
-        let total = 0;
-        for (let i = start; i <= end; i++) total += freqData[i] / 255;
-        return total / Math.max(1, end - start + 1);
+      function buildCloudPuffs() {
+        cloudPuffs = [
+          { x: -118, y: 8, r: 58, dx: 120, dy: -48, rot: -0.2 },
+          { x: -70, y: -18, r: 72, dx: 156, dy: -70, rot: -0.35 },
+          { x: -18, y: -28, r: 84, dx: 208, dy: -84, rot: -0.48 },
+          { x: 42, y: -20, r: 74, dx: 236, dy: -52, rot: -0.22 },
+          { x: 96, y: 8, r: 60, dx: 210, dy: -14, rot: -0.08 },
+          { x: 12, y: 24, r: 92, dx: 178, dy: 34, rot: 0.16 },
+          { x: -52, y: 30, r: 76, dx: 142, dy: 46, rot: 0.18 },
+          { x: 78, y: 32, r: 66, dx: 206, dy: 62, rot: 0.24 },
+          { x: -142, y: 26, r: 40, dx: 90, dy: 38, rot: 0.14 },
+          { x: 144, y: 18, r: 38, dx: 230, dy: 18, rot: 0.1 },
+          { x: -108, y: -34, r: 32, dx: 102, dy: -72, rot: -0.5 },
+          { x: 128, y: -30, r: 30, dx: 246, dy: -46, rot: -0.3 }
+        ];
       }
 
-      function spectralFlatness(startHz, endHz) {
-        if (!freqData) return 0;
-        const start = freqIndexFor(startHz);
-        const end = Math.max(start + 2, freqIndexFor(endHz));
-        let logSum = 0;
-        let linearSum = 0;
-        let count = 0;
-        for (let i = start; i <= end; i++) {
-          const v = Math.max(1e-4, freqData[i] / 255);
-          logSum += Math.log(v);
-          linearSum += v;
-          count++;
-        }
-        if (!count || linearSum <= 0) return 0;
-        const geo = Math.exp(logSum / count);
-        const arith = linearSum / count;
-        return p.constrain(geo / arith, 0, 1);
-      }
-
-      function spectralPeakiness(startHz, endHz) {
-        if (!freqData) return 1;
-        const start = freqIndexFor(startHz);
-        const end = Math.max(start + 2, freqIndexFor(endHz));
-        let sum = 0;
-        let peak = 0;
-        let count = 0;
-        for (let i = start; i <= end; i++) {
-          const v = freqData[i] / 255;
-          sum += v;
-          peak = Math.max(peak, v);
-          count++;
-        }
-        const avg = sum / Math.max(1, count);
-        return avg > 0 ? peak / avg : 1;
-      }
-
-      function startMic() {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AudioContextClass) {
-          statusEl.textContent = 'Camera ready | Mic unsupported in this browser';
-          return;
-        }
-
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-          .then((stream) => {
-            audioContext = new AudioContextClass();
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 1024;
-            analyser.smoothingTimeConstant = 0.5;
-            timeData = new Uint8Array(analyser.fftSize);
-            freqData = new Uint8Array(analyser.frequencyBinCount);
-            source.connect(analyser);
-            detector.calibrationStartedAt = p.millis();
-            detector.state = 'calibrating';
-          })
-          .catch(() => {
-            statusEl.textContent = 'Camera ready | Mic permission denied';
-          });
-      }
-
-      function sampleAudio(deltaMs) {
-        if (!analyser || !timeData || !freqData) {
-          detector.blowConfidence = p.lerp(detector.blowConfidence, 0, 0.12);
-          return;
-        }
-
-        analyser.getByteTimeDomainData(timeData);
-        analyser.getByteFrequencyData(freqData);
-
-        let sum = 0;
-        for (let i = 0; i < timeData.length; i++) {
-          const centered = (timeData[i] - 128) / 128;
-          sum += centered * centered;
-        }
-        const rms = Math.sqrt(sum / timeData.length);
-        detector.fastRms = p.lerp(detector.fastRms, rms, 0.36);
-        detector.slowRms = p.lerp(detector.slowRms, rms, 0.045);
-        detector.liveRms = detector.fastRms;
-        detector.liveAttack = Math.max(0, detector.fastRms - detector.slowRms);
-        detector.liveFlatness = spectralFlatness(150, 4800);
-        const low = rangeEnergy(120, 900);
-        const mid = rangeEnergy(900, 2600);
-        const high = rangeEnergy(2600, 7000);
-        detector.liveLowRatio = (low + mid) / Math.max(0.001, low + mid + high);
-        detector.peakiness = spectralPeakiness(150, 4800);
-
-        if (detector.calibrating) {
-          const progress = p.constrain((p.millis() - detector.calibrationStartedAt) / CALIBRATION_MS, 0, 1);
-          const weight = progress < 0.2 ? 0.16 : 0.07;
-          detector.baselineRms = detector.baselineRms === 0 ? detector.liveRms : p.lerp(detector.baselineRms, detector.liveRms, weight);
-          detector.varianceRms = p.lerp(detector.varianceRms, Math.abs(detector.liveRms - detector.baselineRms), 0.08);
-          detector.baselineAttack = p.lerp(detector.baselineAttack, detector.liveAttack, 0.08);
-          detector.baselineFlatness = p.lerp(detector.baselineFlatness, detector.liveFlatness, 0.08);
-          detector.baselineLowRatio = p.lerp(detector.baselineLowRatio, detector.liveLowRatio, 0.08);
-          detector.blowConfidence = p.lerp(detector.blowConfidence, 0, 0.2);
-
-          if (progress >= 1) {
-            detector.calibrating = false;
-            detector.state = 'ready';
-            detector.armed = true;
-            detector.readyAt = p.millis();
-          }
-          return;
-        }
-
-        const quietThreshold = detector.baselineRms + Math.max(detector.varianceRms * 1.6, 0.006);
-        const loudThreshold = detector.baselineRms + Math.max(detector.varianceRms * 5.8, 0.018);
-        const attackThreshold = detector.baselineAttack + Math.max(detector.baselineAttack * 3.5, 0.007);
-        const strongAttackThreshold = detector.baselineAttack + Math.max(detector.baselineAttack * 6.2, 0.014);
-        const flatnessThreshold = Math.max(detector.baselineFlatness + 0.09, 0.26);
-        const ratioThreshold = Math.max(detector.baselineLowRatio + 0.05, 0.66);
-
-        const loudnessScore = p.constrain(p.map(detector.liveRms, quietThreshold, loudThreshold, 0, 1), 0, 1);
-        const attackScore = p.constrain(p.map(detector.liveAttack, attackThreshold, strongAttackThreshold, 0, 1), 0, 1);
-        const flatnessScore = p.constrain(p.map(detector.liveFlatness, flatnessThreshold, 0.72, 0, 1), 0, 1);
-        const ratioScore = p.constrain(p.map(detector.liveLowRatio, ratioThreshold, 0.95, 0, 1), 0, 1);
-        const tonalPenalty = p.constrain(p.map(detector.peakiness, 2.2, 6.5, 1, 0), 0, 1);
-
-        const composite = (
-          loudnessScore * 0.34 +
-          attackScore * 0.3 +
-          flatnessScore * 0.2 +
-          ratioScore * 0.16
-        ) * tonalPenalty;
-
-        detector.blowConfidence = p.lerp(detector.blowConfidence, composite, 0.18);
-
-        const candidate =
-          loudnessScore > 0.82 &&
-          attackScore > 0.68 &&
-          flatnessScore > 0.42 &&
-          ratioScore > 0.34 &&
-          tonalPenalty > 0.35;
-
-        if (candidate && detector.armed && p.millis() >= detector.cooldownUntil) {
-          detector.candidateMs += deltaMs;
-        } else {
-          detector.candidateMs = Math.max(0, detector.candidateMs - deltaMs * 1.5);
-        }
-
-        if (!candidate && detector.liveRms < quietThreshold) {
-          detector.quietMs += deltaMs;
-        } else {
-          detector.quietMs = 0;
-        }
-
-        if (!detector.armed && detector.quietMs >= QUIET_RESET_MS && p.millis() >= detector.cooldownUntil) {
-          detector.armed = true;
-          detector.state = 'ready';
-        }
-
-        if (
-          detector.armed &&
-          detector.candidateMs >= 90 &&
-          p.millis() >= detector.cooldownUntil
-        ) {
-          switchOn = !switchOn;
-          detector.armed = false;
-          detector.candidateMs = 0;
-          detector.quietMs = 0;
-          detector.cooldownUntil = p.millis() + COOLDOWN_MS;
-          detector.state = 'cooldown';
-          flashUntilMs = p.millis() + 240;
-        }
-
-        if (detector.state === 'cooldown' && p.millis() >= detector.cooldownUntil) {
-          detector.state = detector.armed ? 'ready' : 'ready';
-        }
-
-        const safeToAdapt = detector.state !== 'cooldown' && detector.candidateMs < 25 && detector.liveRms < loudThreshold * 0.92;
-        if (safeToAdapt) {
-          detector.baselineRms = p.lerp(detector.baselineRms, detector.liveRms, 0.006);
-          detector.varianceRms = p.lerp(detector.varianceRms, Math.abs(detector.liveRms - detector.baselineRms), 0.01);
-          detector.baselineAttack = p.lerp(detector.baselineAttack, detector.liveAttack, 0.008);
-          detector.baselineFlatness = p.lerp(detector.baselineFlatness, detector.liveFlatness, 0.006);
-          detector.baselineLowRatio = p.lerp(detector.baselineLowRatio, detector.liveLowRatio, 0.006);
-        }
-
-        smoothedMic = p.lerp(smoothedMic, p.constrain(detector.liveRms * 18, 0, 1), 0.15);
-      }
-
-      function drawFaceOverlay(viewX, viewY, viewW, viewH) {
-        const vw = video?.elt?.videoWidth || 640;
-        const vh = video?.elt?.videoHeight || 480;
-        const scaleX = viewW / vw;
-        const scaleY = viewH / vh;
+      function drawCloudAnimation(x, y, w, h, progress) {
+        const t = p.constrain(progress, 0, 1);
+        const cx = x + w * 0.36;
+        const cy = y + h * 0.55;
 
         p.push();
-        p.noFill();
-        p.stroke(120, 245, 255);
-        p.strokeWeight(2);
+        p.noStroke();
+        p.fill(255, 255, 255, 14);
+        p.rect(x, y, w, h, 18);
 
-        for (const face of predictions) {
-          const mesh = face.scaledMesh;
-          if (!mesh || mesh.length === 0) continue;
+        p.fill(180, 225, 255, 24);
+        p.ellipse(x + w * 0.72, y + h * 0.5, w * 0.42, h * 0.52);
 
-          let minX = Infinity;
-          let minY = Infinity;
-          let maxX = -Infinity;
-          let maxY = -Infinity;
+        for (let i = 0; i < cloudPuffs.length; i++) {
+          const puff = cloudPuffs[i];
+          const driftEase = p.pow(t, 1.2);
+          const scatter = p.sin((t * p.PI) + i * 0.8) * 8;
+          const px = cx + puff.x + puff.dx * driftEase + scatter;
+          const py = cy + puff.y + puff.dy * driftEase;
+          const pr = puff.r * (1 - t * 0.18);
+          const alpha = 220 * (1 - t * 0.72);
 
-          p.beginShape();
-          for (const idx of FACE_OVAL) {
-            const pt = mesh[idx];
-            if (!pt) continue;
-            let x = viewX + (pt[0] * scaleX);
-            const y = viewY + (pt[1] * scaleY);
-            if (MIRROR) x = viewX + viewW - (pt[0] * scaleX);
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-            p.vertex(x, y);
-          }
-          p.endShape(p.CLOSE);
-
-          p.stroke(149, 255, 190);
-          p.rect(minX - 8, minY - 8, (maxX - minX) + 16, (maxY - minY) + 16, 10);
-
-          p.noStroke();
-          p.fill(255, 220, 130);
-          for (const idx of FEATURE_POINTS) {
-            const pt = mesh[idx];
-            if (!pt) continue;
-            let x = viewX + (pt[0] * scaleX);
-            const y = viewY + (pt[1] * scaleY);
-            if (MIRROR) x = viewX + viewW - (pt[0] * scaleX);
-            p.circle(x, y, 5);
-          }
-
-          p.noFill();
-          p.stroke(120, 245, 255);
+          p.fill(245, 248, 255, alpha);
+          p.ellipse(px, py, pr * 1.22, pr);
+          p.fill(255, 255, 255, alpha * 0.58);
+          p.ellipse(px - pr * 0.12, py - pr * 0.1, pr * 0.74, pr * 0.54);
         }
+
+        for (let i = 0; i < 18; i++) {
+          const sparkleT = p.constrain((t - i * 0.025) / 0.55, 0, 1);
+          if (sparkleT <= 0) continue;
+          const sx = cx + 80 + i * 18 + sparkleT * (70 + i * 5);
+          const sy = cy - 26 + (i % 6) * 18 - sparkleT * 24;
+          const sr = 4 + sparkleT * 6;
+          p.fill(255, 255, 255, 90 * (1 - sparkleT));
+          p.ellipse(sx, sy, sr, sr * 0.82);
+        }
+
+        p.fill(255, 255, 255, 170);
+        p.textAlign(p.LEFT, p.BOTTOM);
+        p.textSize(12);
+        p.text('Cloud breakup animation', x + 16, y - 10);
+        p.textAlign(p.RIGHT, p.BOTTOM);
+        p.text(Math.round(t * 100) + '% progress', x + w - 16, y - 10);
         p.pop();
       }
 
-      function drawMeter(x, y, w, h, label, value, accent, subtitle) {
+      function drawVerticalMeter(x, y, w, h, label, value, color, subtitle, markerValue = null) {
         const clamped = p.constrain(value, 0, 1);
         p.push();
         p.noStroke();
-        p.fill(14, 18, 24, 235);
+        p.fill(255, 255, 255, 14);
         p.rect(x, y, w, h, 18);
 
         p.fill(255, 255, 255, 170);
-        p.textAlign(p.LEFT, p.TOP);
-        p.textSize(Math.max(12, h * 0.18));
-        p.text(label, x + 16, y + 14);
-
-        p.textAlign(p.RIGHT, p.TOP);
-        p.fill(accent[0], accent[1], accent[2]);
-        p.text(Math.round(clamped * 100) + '%', x + w - 16, y + 14);
-
-        const barX = x + 16;
-        const barY = y + h - 26;
-        const barW = w - 32;
-        p.fill(255, 255, 255, 24);
-        p.rect(barX, barY, barW, 10, 999);
-        p.fill(accent[0], accent[1], accent[2]);
-        p.rect(barX, barY, barW * clamped, 10, 999);
-
-        if (subtitle) {
-          p.fill(255, 255, 255, 90);
-          p.textAlign(p.LEFT, p.BOTTOM);
-          p.textSize(Math.max(10, h * 0.14));
-          p.text(subtitle, x + 16, y + h - 34);
-        }
-        p.pop();
-      }
-
-      function detectorStateLabel() {
-        if (detector.calibrating) return 'Calibrating';
-        if (detector.state === 'cooldown') return 'Cooldown';
-        return detector.armed ? 'Ready' : 'Waiting reset';
-      }
-
-      function drawSwitchInterface() {
-        const margin = Math.min(p.width, p.height) * 0.05;
-        const gap = Math.min(p.width, p.height) * 0.025;
-        const leftW = p.width < 960 ? p.width - margin * 2 : p.width * 0.56;
-        const rightW = p.width < 960 ? p.width - margin * 2 : p.width - margin * 2 - leftW - gap;
-        const leftX = margin;
-        const rightX = p.width < 960 ? margin : leftX + leftW + gap;
-        const topY = margin + 32;
-
-        const switchCardH = p.height < 860 ? p.height * 0.42 : p.height * 0.48;
-        const switchCardY = topY;
-        const diagnosticsY = p.width < 960 ? switchCardY + switchCardH + gap : topY;
-        const previewY = p.width < 960 ? diagnosticsY + 250 + gap : switchCardY + switchCardH + gap;
-        const previewW = p.width < 960 ? rightW : Math.min(rightW, 360);
-        const previewH = previewW * 0.75;
-
-        p.push();
-        p.noStroke();
-        p.fill(255);
-        p.textAlign(p.LEFT, p.TOP);
-        p.textSize(Math.max(28, p.width * 0.03));
-        p.text('Blow Switch', leftX, margin);
-        p.fill(255, 255, 255, 110);
-        p.textSize(14);
-        p.text('Blow directly into the mic to toggle the switch. Built to resist room noise.', leftX, margin + 34);
-        p.pop();
-
-        p.push();
-        p.noStroke();
-        p.fill(12, 16, 20, 235);
-        p.rect(leftX, switchCardY, leftW, switchCardH, 26);
-        p.pop();
-
-        const orbSize = Math.min(leftW, switchCardH) * (p.width < 960 ? 0.32 : 0.38);
-        const orbX = leftX + leftW * 0.5;
-        const orbY = switchCardY + switchCardH * 0.48;
-        const glow = switchOn ? [116, 255, 186] : [255, 96, 128];
-        const flashBoost = p.millis() < flashUntilMs ? 55 : 0;
-
-        p.push();
-        p.noStroke();
-        for (let i = 5; i >= 1; i--) {
-          const alpha = (switchOn ? 18 : 12) * i + flashBoost;
-          p.fill(glow[0], glow[1], glow[2], alpha);
-          p.circle(orbX, orbY, orbSize + i * 34);
-        }
-        p.fill(20, 22, 28);
-        p.circle(orbX, orbY, orbSize + 28);
-        p.fill(glow[0], glow[1], glow[2], switchOn ? 220 + flashBoost : 130 + flashBoost);
-        p.circle(orbX, orbY, orbSize);
-        p.pop();
-
-        p.push();
-        p.textAlign(p.CENTER, p.CENTER);
-        p.noStroke();
-        p.fill(255);
-        p.textSize(Math.max(38, orbSize * 0.2));
-        p.text(switchOn ? 'ON' : 'OFF', orbX, orbY);
-        p.fill(255, 255, 255, 140);
-        p.textSize(Math.max(14, orbSize * 0.07));
-        p.text(detectorStateLabel(), orbX, orbY + orbSize * 0.34);
-        p.pop();
-
-        const statusBoxW = Math.min(leftW * 0.76, 520);
-        const statusBoxH = 88;
-        const statusBoxX = orbX - statusBoxW * 0.5;
-        const statusBoxY = switchCardY + switchCardH - statusBoxH - 20;
-        p.push();
-        p.noStroke();
-        p.fill(255, 255, 255, 10);
-        p.rect(statusBoxX, statusBoxY, statusBoxW, statusBoxH, 18);
-        p.fill(255, 255, 255, 180);
         p.textAlign(p.CENTER, p.TOP);
-        p.textSize(14);
-        p.text(
-          detector.calibrating
-            ? 'Learning room noise floor'
-            : detector.state === 'cooldown'
-              ? 'Triggered. Waiting for quiet reset'
-              : detector.armed
-                ? 'Ready for a direct blow'
-                : 'Waiting for the mic to settle',
-          orbX,
-          statusBoxY + 18
-        );
-        p.fill(255, 255, 255, 80);
         p.textSize(12);
-        p.text('Conservative tuning reduces false triggers from gallery ambience', orbX, statusBoxY + 46);
-        p.pop();
+        p.text(label, x + w * 0.5, y + 12);
+        p.fill(255, 255, 255, 110);
+        p.textSize(11);
+        p.text(subtitle, x + w * 0.5, y + 28);
 
-        drawMeter(rightX, diagnosticsY, rightW, 92, 'Blow confidence', detector.blowConfidence, [255, 163, 92], 'Multi-signal detector score');
-        drawMeter(rightX, diagnosticsY + 108, rightW, 92, 'Live mic energy', smoothedMic, [255, 102, 150], 'Fast RMS envelope');
-        drawMeter(rightX, diagnosticsY + 216, rightW, 92, 'Ambient baseline', p.constrain(detector.baselineRms * 18, 0, 1), [103, 178, 255], 'Learned room floor');
-        drawMeter(rightX, diagnosticsY + 324, rightW, 92, 'Noise profile', p.constrain((detector.liveFlatness * 0.65) + (detector.liveLowRatio * 0.35), 0, 1), [151, 255, 188], 'Broadband breath-like shape');
+        const tubeX = x + w * 0.28;
+        const tubeY = y + 54;
+        const tubeW = w * 0.44;
+        const tubeH = h - 96;
+        p.fill(255, 255, 255, 18);
+        p.rect(tubeX, tubeY, tubeW, tubeH, 999);
 
-        p.push();
-        p.noStroke();
-        p.fill(12, 16, 20, 235);
-        p.rect(rightX, previewY, previewW, previewH + 34, 22);
-        p.pop();
+        const fillH = tubeH * clamped;
+        p.fill(color[0], color[1], color[2]);
+        p.rect(tubeX, tubeY + tubeH - fillH, tubeW, fillH, 999);
 
-        p.push();
-        if (MIRROR) {
-          p.translate(rightX + previewW, previewY + 16);
-          p.scale(-1, 1);
-          p.image(video, 0, 0, previewW, previewH);
-        } else {
-          p.image(video, rightX, previewY + 16, previewW, previewH);
+        if (markerValue !== null) {
+          const markerY = tubeY + tubeH - (tubeH * p.constrain(markerValue, 0, 1));
+          p.fill(255, 210, 110);
+          p.rect(tubeX - 8, markerY - 2, tubeW + 16, 4, 999);
         }
-        p.pop();
 
-        drawFaceOverlay(rightX, previewY + 16, previewW, previewH);
+        p.fill(255, 255, 255, 70);
+        for (let i = 1; i < 10; i++) {
+          const gy = tubeY + (tubeH / 10) * i;
+          p.rect(tubeX - 8, gy, tubeW + 16, 1);
+        }
 
-        p.push();
-        p.noStroke();
-        p.fill(255, 255, 255, 165);
-        p.textAlign(p.LEFT, p.TOP);
-        p.textSize(13);
-        p.text('Camera + face tracking preview', rightX + 16, previewY + previewH + 22);
+        p.fill(color[0], color[1], color[2]);
+        p.textAlign(p.CENTER, p.BOTTOM);
+        p.textSize(18);
+        p.text(Math.round(clamped * 100) + '%', x + w * 0.5, y + h - 10);
         p.pop();
+      }
+
+      async function startMic() {
+        if (started) return;
+        try {
+          setStatus('Requesting mic');
+          await p.userStartAudio();
+          mic = new p5.AudioIn();
+          await mic.start();
+          fft = new p5.FFT(0.85, 1024);
+          fft.setInput(mic);
+          started = true;
+          setStatus('Mic live');
+        } catch (error) {
+          setStatus('Mic failed');
+        }
+      }
+
+      async function beginCalibration() {
+        if (!started) {
+          await startMic();
+        }
+        if (!started) return;
+        calibrationActive = true;
+        calibrationStartedAt = p.millis();
+        calibrationPeak = 0;
+        setStatus('Blow hard into the mic now');
+      }
+
+      function resizeSketch() {
+        const wrap = document.getElementById('canvasWrap');
+        const nextW = Math.max(320, Math.floor(wrap.clientWidth || 640));
+        const compact = nextW < 560;
+        const baseH = compact ? 500 : 620;
+        const aspect = 640 / baseH;
+        const nextH = Math.max(compact ? 380 : 420, Math.floor(nextW / aspect));
+        p.resizeCanvas(nextW, nextH, true);
       }
 
       p.setup = () => {
-        const canvas = p.createCanvas(window.innerWidth, window.innerHeight);
-        canvas.parent('wrap');
-
-        video = p.createCapture({ video: { facingMode: 'user' }, audio: false }, () => {
-          statusEl.textContent = 'Camera ready, loading face model...';
+        const canvas = p.createCanvas(640, 620);
+        canvas.parent('canvasWrap');
+        p.noStroke();
+        buildCloudPuffs();
+        startButton.addEventListener('click', startMic);
+        calibrateButton.addEventListener('click', beginCalibration);
+        resetCloudButton.addEventListener('click', () => {
+          cloudLatched = false;
+          cloudProgress = 0;
+          blownAway = false;
+          blownAwayStatusEl.textContent = '';
         });
-        video.size(640, 480);
-        video.hide();
-
-        facemesh = ml5.facemesh(video, () => {
-          modelLoaded = true;
-          statusEl.textContent = 'Face model ready';
-        });
-        facemesh.on('predict', (results) => {
-          predictions = results;
-        });
-
-        startMic();
+        resizeSketch();
       };
 
       p.draw = () => {
-        p.background(3, 5, 7);
-        sampleAudio(p.deltaTime || 16);
-        drawSwitchInterface();
+        p.background(8, 12, 18);
 
-        if (!modelLoaded) {
-          statusEl.textContent = 'Loading face model...';
-        } else if (detector.calibrating) {
-          const secs = Math.max(0, (CALIBRATION_MS - (p.millis() - detector.calibrationStartedAt)) / 1000);
-          statusEl.textContent = `Faces: ${predictions.length} | Calibrating mic ${secs.toFixed(1)}s`;
+        let bandLevel = 0;
+        if (fft) {
+          fft.analyze();
+          bandLevel = fft.getEnergy(120, 1800) / 255;
+        }
+
+        smoothedBand = p.lerp(smoothedBand, bandLevel, 0.16);
+        const pct = Math.round(smoothedBand * 100);
+        meterValueEl.textContent = pct + '%';
+        liveReadoutEl.textContent = formatPct(smoothedBand);
+        triggerLevel = suggestedThreshold > 0 ? p.constrain(smoothedBand / suggestedThreshold, 0, 1) : 0;
+        triggered = suggestedThreshold > 0 && smoothedBand >= suggestedThreshold;
+        triggerStatusEl.textContent = triggered ? 'Triggered!' : '';
+        if (triggered) {
+          if (triggerStartedAt === null) {
+            triggerStartedAt = p.millis();
+            triggerHeldMs = 0;
+          }
+          triggerHeldMs = p.millis() - triggerStartedAt;
+        } else if (triggerStartedAt !== null) {
+          triggerStartedAt = null;
+        }
+        triggerTimeEl.textContent = 'Held for ' + (triggerHeldMs / 1000).toFixed(2) + 's';
+        triggeringMeter = triggered ? p.constrain(triggerHeldMs / BLOWN_AWAY_MS, 0, 1) : 0;
+        if (!cloudLatched) {
+          cloudProgress = triggeringMeter;
+          if (triggeringMeter >= 1) {
+            cloudLatched = true;
+            cloudProgress = 1;
+          }
+        }
+        blownAway = cloudLatched;
+        blownAwayStatusEl.textContent = blownAway ? 'Blown away!' : '';
+
+        if (calibrationActive) {
+          calibrationPeak = Math.max(calibrationPeak, smoothedBand);
+          peakReadoutEl.textContent = formatPct(calibrationPeak);
+          const elapsed = p.millis() - calibrationStartedAt;
+          const secsLeft = Math.max(0, (CALIBRATION_MS - elapsed) / 1000);
+          setStatus('Blow hard now ' + secsLeft.toFixed(1) + 's');
+
+          if (elapsed >= CALIBRATION_MS) {
+            calibrationActive = false;
+            suggestedThreshold = Math.max(0, calibrationPeak - THRESHOLD_DROP);
+            thresholdReadoutEl.textContent = formatPct(suggestedThreshold);
+            setStatus('Calibration complete');
+          }
+        }
+
+        const mobile = p.width < 560;
+        const pad = mobile ? 12 : 18;
+        const contentW = p.width - pad * 2;
+
+        if (!mobile) {
+          const cloudX = pad;
+          const cloudY = 34;
+          const cloudW = contentW * 0.62;
+          const cloudH = 552;
+          const meterGap = 12;
+          const meterX = cloudX + cloudW + 14;
+          const meterW = contentW - cloudW - 14;
+          const columnW = (meterW - meterGap * 2) / 3;
+          const meterY = 34;
+          const meterH = 552;
+
+          drawCloudAnimation(cloudX, cloudY, cloudW, cloudH, cloudProgress);
+
+          drawVerticalMeter(meterX, meterY, columnW, meterH, 'Band', smoothedBand, [143, 255, 192], '120-1800 Hz', suggestedThreshold > 0 ? suggestedThreshold : null);
+          drawVerticalMeter(meterX + columnW + meterGap, meterY, columnW, meterH, 'Trigger', triggerLevel, triggered ? [255, 210, 110] : [255, 138, 91], 'To threshold');
+          drawVerticalMeter(meterX + (columnW + meterGap) * 2, meterY, columnW, meterH, 'Progress', triggeringMeter, blownAway ? [143, 255, 192] : [120, 220, 140], '1 sec hold');
         } else {
-          statusEl.textContent = `Faces: ${predictions.length} | Switch ${switchOn ? 'ON' : 'OFF'} | ${detectorStateLabel()} | Blow ${Math.round(detector.blowConfidence * 100)}%`;
+          const meterX = pad;
+          const cloudY = 20;
+          const cloudH = 96;
+          const meterY = 146;
+          const meterW = p.width - pad * 2;
+          const meterH = 58;
+
+          drawCloudAnimation(meterX, cloudY, meterW, cloudH, cloudProgress);
+
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, meterY, meterW, meterH, 999);
+          p.fill(143, 255, 192);
+          p.rect(meterX, meterY, meterW * smoothedBand, meterH, 999);
+
+          if (suggestedThreshold > 0) {
+            const thresholdX = meterX + meterW * suggestedThreshold;
+            p.fill(255, 210, 110);
+            p.rect(thresholdX - 2, meterY - 10, 4, meterH + 20, 999);
+          }
+
+          p.fill(255, 255, 255, 80);
+          for (let i = 1; i < 10; i++) {
+            const x = meterX + (meterW / 10) * i;
+            p.rect(x, meterY - 8, 1, meterH + 16);
+          }
+
+          p.fill(255, 255, 255, 160);
+          p.textAlign(p.LEFT, p.BOTTOM);
+          p.textSize(12);
+          p.text('120 Hz', meterX, meterY - 12);
+          p.textAlign(p.RIGHT, p.BOTTOM);
+          p.text('1800 Hz band energy', meterX + meterW, meterY - 12);
+
+          const triggerY = 238;
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, triggerY, meterW, meterH, 999);
+          p.fill(triggered ? 255 : 255, triggered ? 210 : 138, triggered ? 110 : 91);
+          p.rect(meterX, triggerY, meterW * triggerLevel, meterH, 999);
+
+          const progressY = 330;
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, progressY, meterW, meterH, 999);
+          p.fill(blownAway ? 143 : 120, blownAway ? 255 : 220, blownAway ? 192 : 140);
+          p.rect(meterX, progressY, meterW * triggeringMeter, meterH, 999);
         }
       };
 
       p.windowResized = () => {
-        p.resizeCanvas(window.innerWidth, window.innerHeight);
+        resizeSketch();
       };
     });
   </script>
