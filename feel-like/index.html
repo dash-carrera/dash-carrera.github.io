@@ -2,251 +2,578 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>iPad Gallery Face + Mic Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>p5 Band Meter</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    width: 100%;
+    min-height: 100%;
+    background: #05070a;
+    color: #f2f7ff;
+    font-family: Menlo, Consolas, monospace;
+  }
   body {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    min-height: 100vh;
-    overflow: hidden;
-    background: radial-gradient(circle at 20% 20%, #2a3342 0%, #11151d 45%, #090b10 100%);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
-    color: rgba(255, 255, 255, 0.9);
+    padding: 14px;
   }
-  #wrap {
-    position: relative;
-    width: min(96vw, 1280px);
-    aspect-ratio: 16 / 9;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 10px;
+  #app {
+    width: min(100%, 720px);
+    padding: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 20px;
+    background: rgba(10, 14, 20, 0.92);
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.4);
+  }
+  h1 {
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+  p {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  #controls {
+    margin-top: 14px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  button {
+    min-height: 48px;
+    padding: 12px 18px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 999px;
+    background: #121a24;
+    color: #f2f7ff;
+    font: inherit;
+    font-size: 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  #status {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.8);
+  }
+  #readouts {
+    margin-top: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .readoutCard {
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .readoutLabel {
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.68);
+  }
+  .readoutValue {
+    margin-top: 6px;
+    font-size: 24px;
+  }
+  #meterWrap {
+    margin-top: 16px;
+    padding: 14px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  #meterLabelRow {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+  #meterLabel {
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.72);
+  }
+  #meterValue {
+    font-size: 28px;
+    color: #8fffc0;
+  }
+  #triggerStatus {
+    margin-bottom: 8px;
+    min-height: 24px;
+    font-size: 16px;
+    color: #ffd26e;
+  }
+  #triggerTime {
+    margin-bottom: 8px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.8);
+    min-height: 18px;
+  }
+  #blownAwayStatus {
+    min-height: 24px;
+    font-size: 16px;
+    color: #8fffc0;
+  }
+  #resetCloudButton {
+    padding: 8px 12px;
+    font-size: 13px;
+  }
+  #canvasWrap {
+    border-radius: 14px;
     overflow: hidden;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
-    background: #000;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
   canvas {
     display: block;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
   }
-  #status {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    padding: 6px 8px;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    background: rgba(0, 0, 0, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.18);
-    border-radius: 6px;
-    pointer-events: none;
+  @media (max-width: 900px) {
+    body {
+      padding: 8px;
+      align-items: flex-start;
+    }
+    #app {
+      padding: 14px;
+      border-radius: 14px;
+    }
+    h1 {
+      font-size: 17px;
+    }
+    p {
+      font-size: 11px;
+      line-height: 1.35;
+    }
+    #controls {
+      gap: 8px;
+    }
+    #controls button {
+      min-height: 44px;
+      padding: 10px 14px;
+      font-size: 15px;
+      flex: 1 1 180px;
+    }
+    #status {
+      width: 100%;
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    #readouts {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .readoutCard {
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .readoutLabel {
+      font-size: 10px;
+    }
+    .readoutValue {
+      font-size: 20px;
+    }
+    #meterWrap {
+      padding: 10px;
+    }
+    #meterLabelRow {
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    #meterValue {
+      font-size: 20px;
+    }
+    #resetCloudButton {
+      min-height: 40px;
+      font-size: 14px;
+      width: auto;
+    }
+  }
+  @media (max-width: 620px) {
+    #readouts {
+      grid-template-columns: 1fr;
+    }
+    #resetCloudButton {
+      width: 100%;
+    }
   }
 </style>
 </head>
 <body>
-  <div id="wrap">
-    <div id="status">Loading camera...</div>
-  </div>
+  <main id="app">
+    <h1>120-1800 Hz Mic Meter</h1>
+    <p>This standalone page uses p5.js and p5.sound to listen to microphone energy in the 120-1800 Hz band, display it as a live meter, and calibrate a blow threshold from your strongest input.</p>
+    <section id="readouts">
+      <div class="readoutCard">
+        <div class="readoutLabel">Live Band</div>
+        <div id="liveReadout" class="readoutValue">0%</div>
+      </div>
+      <div class="readoutCard">
+        <div class="readoutLabel">Calibration Peak</div>
+        <div id="peakReadout" class="readoutValue">0%</div>
+      </div>
+      <div class="readoutCard">
+        <div class="readoutLabel">Suggested Volume</div>
+        <div id="thresholdReadout" class="readoutValue">0%</div>
+      </div>
+    </section>
+    <section id="meterWrap">
+      <div id="meterLabelRow">
+        <div id="meterLabel">Band Energy</div>
+        <div id="meterValue">0%</div>
+      </div>
+      <div id="triggerStatus"></div>
+      <div id="triggerTime">Held for 0.00s</div>
+      <div id="blownAwayStatus"></div>
+      <div id="controls">
+        <button id="startButton">Start Mic</button>
+        <button id="calibrateButton">Calibrate Blow</button>
+        <button id="resetCloudButton" type="button">Reset</button>
+        <div id="status">Idle</div>
+      </div>
+      <div id="canvasWrap"></div>
+    </section>
+  </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-  <script src="https://unpkg.com/ml5@0.12.2/dist/ml5.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
   <script>
+    const startButton = document.getElementById('startButton');
+    const calibrateButton = document.getElementById('calibrateButton');
+    const statusEl = document.getElementById('status');
+    const meterValueEl = document.getElementById('meterValue');
+    const liveReadoutEl = document.getElementById('liveReadout');
+    const peakReadoutEl = document.getElementById('peakReadout');
+    const thresholdReadoutEl = document.getElementById('thresholdReadout');
+    const triggerStatusEl = document.getElementById('triggerStatus');
+    const triggerTimeEl = document.getElementById('triggerTime');
+    const blownAwayStatusEl = document.getElementById('blownAwayStatus');
+    const resetCloudButton = document.getElementById('resetCloudButton');
+
     new p5((p) => {
-      const W = 1280;
-      const H = 720;
-      const METER_W = 110;
-      const VIEW_W = W - METER_W;
-      const MIRROR = true;
-      const FACE_OVAL = [
-        10, 338, 297, 332, 284, 251, 389, 356, 454, 323,
-        361, 288, 397, 365, 379, 378, 400, 377, 152, 148,
-        176, 149, 150, 136, 172, 58, 132, 93, 234, 127,
-        162, 21, 54, 103, 67, 109
-      ];
-      const FEATURE_POINTS = [33, 133, 362, 263, 1, 61, 291];
+      const CALIBRATION_MS = 4000;
+      const THRESHOLD_DROP = 0.12;
+      const BLOWN_AWAY_MS = 1000;
 
-      let video;
-      let facemesh;
-      let predictions = [];
-      let modelLoaded = false;
-      let micStream = null;
-      let audioContext = null;
-      let analyser = null;
-      let audioData = null;
-      let smoothedMic = 0;
-      const statusEl = document.getElementById('status');
+      let mic = null;
+      let fft = null;
+      let smoothedBand = 0;
+      let started = false;
+      let calibrationActive = false;
+      let calibrationStartedAt = 0;
+      let calibrationPeak = 0;
+      let suggestedThreshold = 0;
+      let triggerLevel = 0;
+      let triggered = false;
+      let triggerStartedAt = null;
+      let triggerHeldMs = 0;
+      let triggeringMeter = 0;
+      let blownAway = false;
+      let cloudProgress = 0;
+      let cloudLatched = false;
+      let cloudPuffs = [];
 
-      function startMic() {
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || !AudioContextClass) {
-          statusEl.textContent = 'Camera ready | Mic unsupported in this browser';
-          return;
-        }
-
-        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
-          .then((stream) => {
-            micStream = stream;
-            audioContext = new AudioContextClass();
-            const source = audioContext.createMediaStreamSource(stream);
-            analyser = audioContext.createAnalyser();
-            analyser.fftSize = 512;
-            analyser.smoothingTimeConstant = 0.86;
-            audioData = new Uint8Array(analyser.fftSize);
-            source.connect(analyser);
-          })
-          .catch(() => {
-            statusEl.textContent = 'Camera ready | Mic permission denied';
-          });
+      function setStatus(text) {
+        statusEl.textContent = text;
       }
 
-      function getMicLevel() {
-        if (!analyser || !audioData) return 0;
-        analyser.getByteTimeDomainData(audioData);
-        let sum = 0;
-        for (let i = 0; i < audioData.length; i++) {
-          const centered = (audioData[i] - 128) / 128;
-          sum += centered * centered;
-        }
-        const rms = Math.sqrt(sum / audioData.length);
-        return p.constrain(rms * 5.5, 0, 1);
+      function formatPct(value) {
+        return Math.round(p.constrain(value, 0, 1) * 100) + '%';
       }
 
-      function drawFaceOverlay(scaleX, scaleY) {
+      function buildCloudPuffs() {
+        cloudPuffs = [
+          { x: -118, y: 8, r: 58, dx: 120, dy: -48, rot: -0.2 },
+          { x: -70, y: -18, r: 72, dx: 156, dy: -70, rot: -0.35 },
+          { x: -18, y: -28, r: 84, dx: 208, dy: -84, rot: -0.48 },
+          { x: 42, y: -20, r: 74, dx: 236, dy: -52, rot: -0.22 },
+          { x: 96, y: 8, r: 60, dx: 210, dy: -14, rot: -0.08 },
+          { x: 12, y: 24, r: 92, dx: 178, dy: 34, rot: 0.16 },
+          { x: -52, y: 30, r: 76, dx: 142, dy: 46, rot: 0.18 },
+          { x: 78, y: 32, r: 66, dx: 206, dy: 62, rot: 0.24 },
+          { x: -142, y: 26, r: 40, dx: 90, dy: 38, rot: 0.14 },
+          { x: 144, y: 18, r: 38, dx: 230, dy: 18, rot: 0.1 },
+          { x: -108, y: -34, r: 32, dx: 102, dy: -72, rot: -0.5 },
+          { x: 128, y: -30, r: 30, dx: 246, dy: -46, rot: -0.3 }
+        ];
+      }
+
+      function drawCloudAnimation(x, y, w, h, progress) {
+        const t = p.constrain(progress, 0, 1);
+        const cx = x + w * 0.36;
+        const cy = y + h * 0.55;
+
         p.push();
-        p.noFill();
-        p.stroke(120, 245, 255);
-        p.strokeWeight(3);
+        p.noStroke();
+        p.fill(255, 255, 255, 14);
+        p.rect(x, y, w, h, 18);
 
-        for (const face of predictions) {
-          const mesh = face.scaledMesh;
-          if (!mesh || mesh.length === 0) continue;
+        p.fill(180, 225, 255, 24);
+        p.ellipse(x + w * 0.72, y + h * 0.5, w * 0.42, h * 0.52);
 
-          let minX = Infinity;
-          let minY = Infinity;
-          let maxX = -Infinity;
-          let maxY = -Infinity;
+        for (let i = 0; i < cloudPuffs.length; i++) {
+          const puff = cloudPuffs[i];
+          const driftEase = p.pow(t, 1.2);
+          const scatter = p.sin((t * p.PI) + i * 0.8) * 8;
+          const px = cx + puff.x + puff.dx * driftEase + scatter;
+          const py = cy + puff.y + puff.dy * driftEase;
+          const pr = puff.r * (1 - t * 0.18);
+          const alpha = 220 * (1 - t * 0.72);
 
-          p.beginShape();
-          for (const idx of FACE_OVAL) {
-            const pt = mesh[idx];
-            if (!pt) continue;
-            let x = pt[0] * scaleX;
-            const y = pt[1] * scaleY;
-            if (MIRROR) x = VIEW_W - x;
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-            p.vertex(x, y);
-          }
-          p.endShape(p.CLOSE);
-
-          p.stroke(149, 255, 190);
-          p.rect(minX - 10, minY - 10, (maxX - minX) + 20, (maxY - minY) + 20, 12);
-
-          p.noStroke();
-          p.fill(255, 220, 130);
-          for (const idx of FEATURE_POINTS) {
-            const pt = mesh[idx];
-            if (!pt) continue;
-            let x = pt[0] * scaleX;
-            const y = pt[1] * scaleY;
-            if (MIRROR) x = VIEW_W - x;
-            p.circle(x, y, 6);
-          }
-
-          p.noFill();
-          p.stroke(120, 245, 255);
+          p.fill(245, 248, 255, alpha);
+          p.ellipse(px, py, pr * 1.22, pr);
+          p.fill(255, 255, 255, alpha * 0.58);
+          p.ellipse(px - pr * 0.12, py - pr * 0.1, pr * 0.74, pr * 0.54);
         }
+
+        for (let i = 0; i < 18; i++) {
+          const sparkleT = p.constrain((t - i * 0.025) / 0.55, 0, 1);
+          if (sparkleT <= 0) continue;
+          const sx = cx + 80 + i * 18 + sparkleT * (70 + i * 5);
+          const sy = cy - 26 + (i % 6) * 18 - sparkleT * 24;
+          const sr = 4 + sparkleT * 6;
+          p.fill(255, 255, 255, 90 * (1 - sparkleT));
+          p.ellipse(sx, sy, sr, sr * 0.82);
+        }
+
+        p.fill(255, 255, 255, 170);
+        p.textAlign(p.LEFT, p.BOTTOM);
+        p.textSize(12);
+        p.text('Cloud breakup animation', x + 16, y - 10);
+        p.textAlign(p.RIGHT, p.BOTTOM);
+        p.text(Math.round(t * 100) + '% progress', x + w - 16, y - 10);
         p.pop();
       }
 
-      function drawMeter(level) {
-        const x = VIEW_W;
+      function drawVerticalMeter(x, y, w, h, label, value, color, subtitle, markerValue = null) {
+        const clamped = p.constrain(value, 0, 1);
         p.push();
         p.noStroke();
-        p.fill(8, 12, 18, 235);
-        p.rect(x, 0, METER_W, H);
+        p.fill(255, 255, 255, 14);
+        p.rect(x, y, w, h, 18);
 
-        p.stroke(255, 255, 255, 35);
-        for (let y = 24; y < H; y += 32) {
-          p.line(x + 16, y, x + METER_W - 16, y);
-        }
-
-        p.noStroke();
-        p.fill(255, 255, 255, 180);
+        p.fill(255, 255, 255, 170);
         p.textAlign(p.CENTER, p.TOP);
         p.textSize(12);
-        p.text('MIC', x + METER_W * 0.5, 16);
+        p.text(label, x + w * 0.5, y + 12);
+        p.fill(255, 255, 255, 110);
+        p.textSize(11);
+        p.text(subtitle, x + w * 0.5, y + 28);
 
-        const meterH = H - 110;
-        const meterY = 54;
-        const fillH = meterH * level;
-        p.fill(18, 24, 32);
-        p.rect(x + 26, meterY, METER_W - 52, meterH, 10);
+        const tubeX = x + w * 0.28;
+        const tubeY = y + 54;
+        const tubeW = w * 0.44;
+        const tubeH = h - 96;
+        p.fill(255, 255, 255, 18);
+        p.rect(tubeX, tubeY, tubeW, tubeH, 999);
 
-        p.fill(255, 138, 91);
-        p.rect(x + 26, meterY + meterH - fillH, METER_W - 52, fillH, 10);
+        const fillH = tubeH * clamped;
+        p.fill(color[0], color[1], color[2]);
+        p.rect(tubeX, tubeY + tubeH - fillH, tubeW, fillH, 999);
 
-        p.fill(255);
-        p.textSize(22);
-        p.text(Math.round(level * 100) + '%', x + METER_W * 0.5, H - 44);
+        if (markerValue !== null) {
+          const markerY = tubeY + tubeH - (tubeH * p.constrain(markerValue, 0, 1));
+          p.fill(255, 210, 110);
+          p.rect(tubeX - 8, markerY - 2, tubeW + 16, 4, 999);
+        }
+
+        p.fill(255, 255, 255, 70);
+        for (let i = 1; i < 10; i++) {
+          const gy = tubeY + (tubeH / 10) * i;
+          p.rect(tubeX - 8, gy, tubeW + 16, 1);
+        }
+
+        p.fill(color[0], color[1], color[2]);
+        p.textAlign(p.CENTER, p.BOTTOM);
+        p.textSize(18);
+        p.text(Math.round(clamped * 100) + '%', x + w * 0.5, y + h - 10);
         p.pop();
+      }
+
+      async function startMic() {
+        if (started) return;
+        try {
+          setStatus('Requesting mic');
+          await p.userStartAudio();
+          mic = new p5.AudioIn();
+          await mic.start();
+          fft = new p5.FFT(0.85, 1024);
+          fft.setInput(mic);
+          started = true;
+          setStatus('Mic live');
+        } catch (error) {
+          setStatus('Mic failed');
+        }
+      }
+
+      async function beginCalibration() {
+        if (!started) {
+          await startMic();
+        }
+        if (!started) return;
+        calibrationActive = true;
+        calibrationStartedAt = p.millis();
+        calibrationPeak = 0;
+        setStatus('Blow hard into the mic now');
+      }
+
+      function resizeSketch() {
+        const wrap = document.getElementById('canvasWrap');
+        const nextW = Math.max(320, Math.floor(wrap.clientWidth || 640));
+        const compact = nextW < 560;
+        const baseH = compact ? 500 : 620;
+        const aspect = 640 / baseH;
+        const nextH = Math.max(compact ? 380 : 420, Math.floor(nextW / aspect));
+        p.resizeCanvas(nextW, nextH, true);
       }
 
       p.setup = () => {
-        const canvas = p.createCanvas(W, H);
-        canvas.parent('wrap');
-
-        video = p.createCapture({ video: { facingMode: 'user' }, audio: false }, () => {
-          statusEl.textContent = 'Camera ready, loading face model...';
+        const canvas = p.createCanvas(640, 620);
+        canvas.parent('canvasWrap');
+        p.noStroke();
+        buildCloudPuffs();
+        startButton.addEventListener('click', startMic);
+        calibrateButton.addEventListener('click', beginCalibration);
+        resetCloudButton.addEventListener('click', () => {
+          cloudLatched = false;
+          cloudProgress = 0;
+          blownAway = false;
+          blownAwayStatusEl.textContent = '';
         });
-        video.size(VIEW_W, H);
-        video.hide();
-
-        facemesh = ml5.facemesh(video, () => {
-          modelLoaded = true;
-          statusEl.textContent = 'Model ready';
-        });
-        facemesh.on('predict', (results) => {
-          predictions = results;
-        });
-
-        startMic();
+        resizeSketch();
       };
 
       p.draw = () => {
-        p.background(0);
+        p.background(8, 12, 18);
 
-        const vw = video?.elt?.videoWidth || VIEW_W;
-        const vh = video?.elt?.videoHeight || H;
-        const scaleX = VIEW_W / vw;
-        const scaleY = H / vh;
-
-        p.push();
-        if (MIRROR) {
-          p.translate(VIEW_W, 0);
-          p.scale(-1, 1);
+        let bandLevel = 0;
+        if (fft) {
+          fft.analyze();
+          bandLevel = fft.getEnergy(120, 1800) / 255;
         }
-        p.image(video, 0, 0, VIEW_W, H);
-        p.pop();
 
-        drawFaceOverlay(scaleX, scaleY);
+        smoothedBand = p.lerp(smoothedBand, bandLevel, 0.16);
+        const pct = Math.round(smoothedBand * 100);
+        meterValueEl.textContent = pct + '%';
+        liveReadoutEl.textContent = formatPct(smoothedBand);
+        triggerLevel = suggestedThreshold > 0 ? p.constrain(smoothedBand / suggestedThreshold, 0, 1) : 0;
+        triggered = suggestedThreshold > 0 && smoothedBand >= suggestedThreshold;
+        triggerStatusEl.textContent = triggered ? 'Triggered!' : '';
+        if (triggered) {
+          if (triggerStartedAt === null) {
+            triggerStartedAt = p.millis();
+            triggerHeldMs = 0;
+          }
+          triggerHeldMs = p.millis() - triggerStartedAt;
+        } else if (triggerStartedAt !== null) {
+          triggerStartedAt = null;
+        }
+        triggerTimeEl.textContent = 'Held for ' + (triggerHeldMs / 1000).toFixed(2) + 's';
+        triggeringMeter = triggered ? p.constrain(triggerHeldMs / BLOWN_AWAY_MS, 0, 1) : 0;
+        if (!cloudLatched) {
+          cloudProgress = triggeringMeter;
+          if (triggeringMeter >= 1) {
+            cloudLatched = true;
+            cloudProgress = 1;
+          }
+        }
+        blownAway = cloudLatched;
+        blownAwayStatusEl.textContent = blownAway ? 'Blown away!' : '';
 
-        p.stroke(255, 255, 255, 120);
-        p.line(VIEW_W, 0, VIEW_W, H);
+        if (calibrationActive) {
+          calibrationPeak = Math.max(calibrationPeak, smoothedBand);
+          peakReadoutEl.textContent = formatPct(calibrationPeak);
+          const elapsed = p.millis() - calibrationStartedAt;
+          const secsLeft = Math.max(0, (CALIBRATION_MS - elapsed) / 1000);
+          setStatus('Blow hard now ' + secsLeft.toFixed(1) + 's');
 
-        smoothedMic = p.lerp(smoothedMic, getMicLevel(), 0.18);
-        drawMeter(smoothedMic);
+          if (elapsed >= CALIBRATION_MS) {
+            calibrationActive = false;
+            suggestedThreshold = Math.max(0, calibrationPeak - THRESHOLD_DROP);
+            thresholdReadoutEl.textContent = formatPct(suggestedThreshold);
+            setStatus('Calibration complete');
+          }
+        }
 
-        if (!modelLoaded) {
-          statusEl.textContent = 'Loading face model...';
+        const mobile = p.width < 560;
+        const pad = mobile ? 12 : 18;
+        const contentW = p.width - pad * 2;
+
+        if (!mobile) {
+          const cloudX = pad;
+          const cloudY = 34;
+          const cloudW = contentW * 0.62;
+          const cloudH = 552;
+          const meterGap = 12;
+          const meterX = cloudX + cloudW + 14;
+          const meterW = contentW - cloudW - 14;
+          const columnW = (meterW - meterGap * 2) / 3;
+          const meterY = 34;
+          const meterH = 552;
+
+          drawCloudAnimation(cloudX, cloudY, cloudW, cloudH, cloudProgress);
+
+          drawVerticalMeter(meterX, meterY, columnW, meterH, 'Band', smoothedBand, [143, 255, 192], '120-1800 Hz', suggestedThreshold > 0 ? suggestedThreshold : null);
+          drawVerticalMeter(meterX + columnW + meterGap, meterY, columnW, meterH, 'Trigger', triggerLevel, triggered ? [255, 210, 110] : [255, 138, 91], 'To threshold');
+          drawVerticalMeter(meterX + (columnW + meterGap) * 2, meterY, columnW, meterH, 'Progress', triggeringMeter, blownAway ? [143, 255, 192] : [120, 220, 140], '1 sec hold');
         } else {
-          statusEl.textContent = `Faces detected: ${predictions.length} | Mic: ${Math.round(smoothedMic * 100)}%`;
+          const meterX = pad;
+          const cloudY = 20;
+          const cloudH = 96;
+          const meterY = 146;
+          const meterW = p.width - pad * 2;
+          const meterH = 58;
+
+          drawCloudAnimation(meterX, cloudY, meterW, cloudH, cloudProgress);
+
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, meterY, meterW, meterH, 999);
+          p.fill(143, 255, 192);
+          p.rect(meterX, meterY, meterW * smoothedBand, meterH, 999);
+
+          if (suggestedThreshold > 0) {
+            const thresholdX = meterX + meterW * suggestedThreshold;
+            p.fill(255, 210, 110);
+            p.rect(thresholdX - 2, meterY - 10, 4, meterH + 20, 999);
+          }
+
+          p.fill(255, 255, 255, 80);
+          for (let i = 1; i < 10; i++) {
+            const x = meterX + (meterW / 10) * i;
+            p.rect(x, meterY - 8, 1, meterH + 16);
+          }
+
+          p.fill(255, 255, 255, 160);
+          p.textAlign(p.LEFT, p.BOTTOM);
+          p.textSize(12);
+          p.text('120 Hz', meterX, meterY - 12);
+          p.textAlign(p.RIGHT, p.BOTTOM);
+          p.text('1800 Hz band energy', meterX + meterW, meterY - 12);
+
+          const triggerY = 238;
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, triggerY, meterW, meterH, 999);
+          p.fill(triggered ? 255 : 255, triggered ? 210 : 138, triggered ? 110 : 91);
+          p.rect(meterX, triggerY, meterW * triggerLevel, meterH, 999);
+
+          const progressY = 330;
+          p.fill(255, 255, 255, 22);
+          p.rect(meterX, progressY, meterW, meterH, 999);
+          p.fill(blownAway ? 143 : 120, blownAway ? 255 : 220, blownAway ? 192 : 140);
+          p.rect(meterX, progressY, meterW * triggeringMeter, meterH, 999);
         }
+      };
+
+      p.windowResized = () => {
+        resizeSketch();
       };
     });
   </script>
