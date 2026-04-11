@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>feels_like_interaccess_DEPLOY</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; min-height: 100vh; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
+  .wrap { position: relative; width: 100vw; height: 100vh; }
+  canvas#cloud { display: block; width: 100%; height: 100%; }
+  .videoPanels {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .videoPanel {
+    width: 100%;
+    height: 100%;
+  }
+  .videoStage {
+    position: relative;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    margin: 0;
+  }
+  .loadedVideo {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #000;
+  }
+  .videoStage.hasVideo .loadedVideo {
+    display: block;
+  }
+  .faceOverlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="cloud"></canvas>
+  <div class="videoPanels">
+    <div class="videoPanel" data-panel-index="0" data-source-type="camera">
+      <div class="videoStage">
+        <video class="loadedVideo" muted autoplay playsinline></video>
+        <canvas class="faceOverlay"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+// ── PERSON REGISTRY ──────────────────────────────────────────
+const people = [];
+let activePerson = null;
+let pulseConfirmedWinnerKey = null;
+let pulsePendingWinnerKey = null;
+let pulsePendingSinceMs = 0;
+let pulseConfirmedWinnerSeenAtMs = 0;
+let pulseLastTriggeredWinnerKey = null;
+
+// ── CLOUD PARAMETER SPACE ────────────────────────────────────
+const PARAM_RANGES = {
+  skyH: { min: 190, max: 210 }, skyS: { min: 12, max: 78 }, skyV: { min: 22, max: 85 },
+  turbulence: { min: 0, max: 4 }, noiseOffset: { min: 0.05, max: 0.78 }, noiseCeiling: { min: 0.08, max: 0.88 },
+};
+const PARAM_KEYS = Object.keys(PARAM_RANGES);
+
+function normalizedToCloud(norm) {
+  const cloud = {};
+  PARAM_KEYS.forEach((k, i) => { const r = PARAM_RANGES[k]; cloud[k] = r.min + norm[i] * (r.max - r.min); });
+  return cloud;
+}
+
+// ── CYCLING POISSON ──────────────────────────────────────────
+const BATCH_SIZE = 30;
+const batchNorms = [];
+
+const EDGE_ANCHORS = [
+  [0.0, 1.0, 0.8, 0.0, 0.2, 0.9],
+  [1.0, 0.0, 0.1, 1.0, 0.9, 0.0],
+  [0.5, 0.8, 1.0, 0.6, 0.0, 1.0],
+  [0.0, 0.2, 0.0, 0.3, 0.8, 0.1],
+];
+
+// Turbulence (index 3) biased toward lower values via power curve
+function randomCandidate() {
+  return Array.from({ length: 6 }, (_, i) => {
+    if (i === 3) return Math.random() ** 1.5;
+    return Math.random();
+  });
+}
+
+function findMaximallyDifferent() {
+  if (batchNorms.length === 0) {
+    return EDGE_ANCHORS[Math.floor(Math.random() * EDGE_ANCHORS.length)].slice();
+  }
+  let bestPoint = null, bestMinDist = -1;
+  for (let c = 0; c < 5000; c++) {
+    const cand = randomCandidate();
+    let minD = Infinity;
+    for (const ex of batchNorms) { const d = dist6(cand, ex); if (d < minD) minD = d; }
+    if (minD > bestMinDist) { bestMinDist = minD; bestPoint = cand; }
+  }
+  return bestPoint;
+}
+
+function registerPerson() {
+  if (batchNorms.length >= BATCH_SIZE) batchNorms.length = 0;
+  const norm = findMaximallyDifferent();
+  batchNorms.push(norm);
+  return addPersonFromNorm(norm);
+}
+
+function encodeNorm(norm) {
+  return norm
+    .map(v => Math.round(clamp(v, 0, 1) * 999).toString(36).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+}
+
+function decodeNorm(code) {
+  if (!/^[0-9A-Z]{12}$/.test(code)) return null;
+  const norm = [];
+  for (let i = 0; i < code.length; i += 2) {
+    const value = parseInt(code.slice(i, i + 2), 36);
+    if (!Number.isFinite(value) || value > 999) return null;
+    norm.push(value / 999);
+  }
+  return norm;
+}
+
+function addPersonFromNorm(norm) {
+  const personCode = encodeNorm(norm);
+  const existing = people.find(person => person.personCode === personCode);
+  if (existing) return existing;
+  const id = people.length + 1;
+  const person = { id, norm, personCode, cloudParams: normalizedToCloud(norm) };
+  people.push(person);
+  return person;
+}
+
+// ── SUN PULSE ───────────────────────────────────────────────
+let sunPulseT = -1;
+const SUN_PULSE_DURATION = 2200;
+let sunPulseStart = 0;
+
+function triggerSunPulse() {
+  sunPulseT = 0;
+  sunPulseStart = performance.now();
+}
+
+function updateSunPulse(now) {
+  if (sunPulseT < 0) return;
+  sunPulseT = (now - sunPulseStart) / SUN_PULSE_DURATION;
+  if (sunPulseT >= 1) sunPulseT = -1;
+}
+
+function getSunPulseIntensity() {
+  if (sunPulseT < 0) return 0;
+  return Math.sin(sunPulseT * Math.PI);
+}
+
+// ── CLOUD RENDERER ───────────────────────────────────────────
+const OpenSimplex=(function(){const S=-0.211324865405187,Q=0.366025403784439,N=47;const G=[5,2,2,5,-5,2,-2,5,5,-2,2,-5,-5,-2,-2,-5];function sd(s){s=BigInt(s);const p=new Uint8Array(256),r=new Uint8Array(256);for(let i=0;i<256;i++)r[i]=i;for(let k=0;k<3;k++)s=s*6364136223846793005n+1442695040888963407n;for(let i=255;i>=0;i--){s=s*6364136223846793005n+1442695040888963407n;let v=Number((s+31n)%BigInt(i+1));if(v<0)v+=i+1;p[i]=r[v];r[v]=r[i]}return p}return function(s){const p=sd(s);return{noise2D(x,y){const so=(x+y)*S,xs=x+so,ys=y+so;const xsb=Math.floor(xs),ysb=Math.floor(ys);const qo=(xsb+ysb)*Q;const dx0=x-(xsb+qo),dy0=y-(ysb+qo);const xi=xs-xsb,yi=ys-ysb,ins=xi+yi;let v=0;const c=(ddx,ddy,xv,yv)=>{let a=2-ddx*ddx-ddy*ddy;if(a>0){a*=a;const i=p[(p[xv&255]+yv)&255]%8*2;v+=a*a*(G[i]*ddx+G[i+1]*ddy)}};c(dx0-1-Q,dy0-Q,xsb+1,ysb);c(dx0-Q,dy0-1-Q,xsb,ysb+1);c(dx0,dy0,xsb,ysb);if(ins>1)c(dx0-1-2*Q,dy0-1-2*Q,xsb+1,ysb+1);else if(xi>yi)c(dx0+1,dy0-1,xsb-1,ysb+1);else c(dx0-1,dy0+1,xsb+1,ysb-1);return v/N}}}})();
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v, rnd=(a,b)=>a+Math.random()*(b-a), rndI=(a,b)=>Math.floor(rnd(a,b+1));
+function hsvToRgb(h,s,v){s/=100;v/=100;const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255|0,(g+m)*255|0,(b+m)*255|0]}
+function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d>0){if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}if(h<0)h+=360;return[Math.round(h),Math.round(mx===0?0:(d/mx)*100),Math.round(mx*100)]}
+function lerpHsv(a,b,t){let dh=b[0]-a[0];if(dh>180)dh-=360;if(dh<-180)dh+=360;let h=a[0]+dh*t;if(h<0)h+=360;if(h>=360)h-=360;return[h,lerp(a[1],b[1],t),lerp(a[2],b[2],t)]}
+
+let cloudCurrent={skyH:200,skyS:45,skyV:55,turbulence:1.5,noiseOffset:0.4,noiseCeiling:0.5};
+let cloudTarget={...cloudCurrent};
+let transitionSpeed=0.002, regenMs=300;
+const darkCutoff=0.62, edgeCutoff=0.92, EDGE_B=rgbToHsv(252,248,210);
+let simplex=OpenSimplex(Math.floor(Math.random()*999999));
+let timeOffset=0;
+function n2(x,y){return simplex.noise2D(x,y)*0.5+0.5}
+function getSky(){return[cloudCurrent.skyH,cloudCurrent.skyS,cloudCurrent.skyV]}
+function getDarkA(){const sk=getSky();let h=sk[0]+23;if(h>=360)h-=360;return[h,sk[1],Math.max(0,sk[2]-29)]}
+function getMidB(){const dA=getDarkA();return[dA[0],Math.max(0,dA[1]-46),Math.min(100,dA[2]+31)]}
+
+const cloudCan=document.getElementById('cloud'),cctx=cloudCan.getContext('2d');
+function resizeCloud(){cloudCan.width=window.innerWidth;cloudCan.height=window.innerHeight}
+resizeCloud();window.addEventListener('resize',resizeCloud);
+
+const CLOUD_W=1800,CLOUD_H=1360,BLEED=480;
+const BUF_W=CLOUD_W+BLEED*2,BUF_H=CLOUD_H+BLEED*2,BASE_RX=760;
+const CX=BUF_W/2,CY=BUF_H/2,VERTS=62,STEPS=30,TARGET=4800,MAX_ATT=48000;
+const buf=document.createElement('canvas');buf.width=BUF_W;buf.height=BUF_H;
+const bctx=buf.getContext('2d');
+const bgCan=document.createElement('canvas');bgCan.width=BUF_W;bgCan.height=BUF_H;
+const bgCtx=bgCan.getContext('2d');
+
+// ── EDGE PULSE OVERLAY (60fps, drawn on top of cloud) ───────
+function drawPulseOverlay(ctx, canW, canH) {
+  const pulse = getSunPulseIntensity();
+  if (pulse <= 0) return;
+  const alpha = pulse * 0.45;
+  // Radial gradient: transparent center, white edges
+  const cx = canW / 2, cy = canH / 2;
+  const innerR = Math.min(canW, canH) * 0.35;
+  const outerR = Math.sqrt(cx * cx + cy * cy);
+  ctx.save();
+  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+  grad.addColorStop(0, 'rgba(255,255,255,0)');
+  grad.addColorStop(0.5, `rgba(255,255,255,${clamp(alpha * 0.3, 0, 1)})`);
+  grad.addColorStop(0.8, `rgba(255,255,255,${clamp(alpha * 0.7, 0, 1)})`);
+  grad.addColorStop(1, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canW, canH);
+  ctx.restore();
+}
+
+function drawStrokePath(c,px,py){c.beginPath();c.moveTo(px[0],py[0]);for(let i=1;i<VERTS;i++)c.lineTo(px[i],py[i]);c.closePath()}
+function drawBackground(){const sk=hsvToRgb(...getSky());bgCtx.fillStyle=`rgb(${sk[0]},${sk[1]},${sk[2]})`;bgCtx.fillRect(0,0,BUF_W,BUF_H);const sunX=CX,sunY=CY,sunR=200;const grad=bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,sunR*5);grad.addColorStop(0,'rgba(255,255,250,1.0)');grad.addColorStop(0.06,'rgba(255,253,242,0.95)');grad.addColorStop(0.14,'rgba(255,248,225,0.6)');grad.addColorStop(0.25,'rgba(255,240,210,0.3)');grad.addColorStop(0.4,`rgba(${lerp(255,sk[0],0.3)|0},${lerp(255,sk[1],0.3)|0},${lerp(250,sk[2],0.3)|0},0.12)`);grad.addColorStop(0.6,`rgba(${lerp(255,sk[0],0.7)|0},${lerp(255,sk[1],0.7)|0},${lerp(250,sk[2],0.7)|0},0.05)`);grad.addColorStop(1,`rgba(${sk[0]},${sk[1]},${sk[2]},0)`);bgCtx.fillStyle=grad;bgCtx.fillRect(0,0,BUF_W,BUF_H);bgCtx.fillStyle='#ffffff';bgCtx.beginPath();bgCtx.arc(sunX,sunY,sunR,0,Math.PI*2);bgCtx.fill()}
+function sdf(x,y){const nx=(x-CX)/BASE_RX,ny=(y-CY)/440;let d=nx*nx+ny*ny*1.7,ns=0.009,t=cloudCurrent.turbulence,o=timeOffset;d-=(n2(x*ns+o,y*ns*1.4+o)-0.5)*t;d-=(n2(x*ns*2.2+40+o,y*ns*2.2+40+o)-0.5)*0.45*t;d-=(n2(x*ns*0.5+80+o,y*ns*0.5+80+o)-0.5)*0.55*t;return d+cloudCurrent.noiseOffset}
+function dCol(d){const dv=-0.6*Math.max(1,cloudCurrent.turbulence),ev=0.80;let t=clamp((d-dv)/(ev-dv),0,1);t=Math.max(t,1.0-cloudCurrent.noiseCeiling);const dA=getDarkA(),mB=getMidB(),eB=EDGE_B,dB=lerpHsv(dA,mB,0.5);let hsv;if(t<darkCutoff)hsv=lerpHsv(dA,dB,t/darkCutoff);else if(t<edgeCutoff)hsv=lerpHsv(dB,mB,(t-darkCutoff)/(edgeCutoff-darkCutoff));else hsv=lerpHsv(mB,eB,(t-edgeCutoff)/(1-edgeCutoff));const[r,g,b]=hsvToRgb(hsv[0],hsv[1],hsv[2]);return[clamp(r+rnd(-6,6),0,255)|0,clamp(g+rnd(-6,6),0,255)|0,clamp(b+rnd(-6,6),0,255)|0]}
+let strokes=[];
+function bake(s){const hw=s.len*.5,hh=s.thick*.5,fray=s.thick*.85,nO=rnd(0,1000),nS=0.22;const px=new Float32Array(VERTS),py=new Float32Array(VERTS);let vi=0;for(let i=0;i<=STEPS;i++){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=-hh*e+(n2(nO+t*nS*5,0)-.5)*2*fray*e;vi++}for(let i=STEPS;i>=0;i--){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=hh*e+(n2(nO+50+t*nS*5,0)-.5)*2*fray*e;vi++}s.px=px;s.py=py}
+function spawn(){const rx=840+BLEED*.5,ry=580+BLEED*.5;const x=rnd(CX-rx,CX+rx),y=rnd(CY-ry,CY+ry),d=sdf(x,y);let len,thick,angle,alpha;if(d<0){len=rnd(100,260);thick=rnd(28,76);angle=rnd(-.3,.3);alpha=rndI(140,230)}else if(d<.55){len=rnd(70,220);thick=rnd(20,60);angle=rnd(-.4,.4);alpha=rndI(110,210)}else if(d<.82){len=rnd(30,120);thick=rnd(10,36);angle=rnd(-Math.PI/2,Math.PI/2);alpha=rndI(50,140)}else return null;const s={x,y,len,thick,angle,alpha:clamp(alpha,1,255),col:dCol(d),depth:d};bake(s);return s}
+function generateCloud(){timeOffset+=0.005;drawBackground();bctx.drawImage(bgCan,0,0);strokes=[];let att=0;while(strokes.length<TARGET&&att<MAX_ATT){const s=spawn();if(s)strokes.push(s);att++}strokes.sort((a,b)=>b.depth-a.depth);for(const s of strokes){bctx.save();bctx.translate(s.x,s.y);bctx.rotate(s.angle);bctx.globalAlpha=s.alpha/255;bctx.fillStyle=`rgb(${s.col[0]},${s.col[1]},${s.col[2]})`;drawStrokePath(bctx,s.px,s.py);bctx.fill();bctx.restore()}bctx.globalAlpha=1}
+function stepCloudTransition(){const sp=transitionSpeed;let dh=cloudTarget.skyH-cloudCurrent.skyH;if(dh>180)dh-=360;if(dh<-180)dh+=360;cloudCurrent.skyH+=dh*sp;if(cloudCurrent.skyH<0)cloudCurrent.skyH+=360;if(cloudCurrent.skyH>=360)cloudCurrent.skyH-=360;cloudCurrent.skyS=lerp(cloudCurrent.skyS,cloudTarget.skyS,sp);cloudCurrent.skyV=lerp(cloudCurrent.skyV,cloudTarget.skyV,sp);cloudCurrent.turbulence=lerp(cloudCurrent.turbulence,cloudTarget.turbulence,sp);cloudCurrent.noiseOffset=lerp(cloudCurrent.noiseOffset,cloudTarget.noiseOffset,sp);cloudCurrent.noiseCeiling=lerp(cloudCurrent.noiseCeiling,cloudTarget.noiseCeiling,sp)}
+
+function dist6(a, b) { let s = 0; for (let i = 0; i < 6; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s); }
+
+// ── FPS COUNTER ─────────────────────────────────────────────
+const fpsEl = document.getElementById('fps');
+const cloudDebugEl = document.getElementById('cloudDebug');
+let fpsFrames = 0, fpsLast = performance.now(), regenTime = 0;
+function updateFps(now) {
+  if (!fpsEl) return;
+  fpsFrames++;
+  if (now - fpsLast >= 1000) {
+    const fps = Math.round(fpsFrames * 1000 / (now - fpsLast));
+    fpsEl.textContent = `${fps} fps · regen ${regenTime}ms`;
+    fpsFrames = 0;
+    fpsLast = now;
+  }
+}
+
+function formatCloudParamValue(key, value) {
+  return key === 'turbulence' || key === 'noiseOffset' || key === 'noiseCeiling'
+    ? value.toFixed(3)
+    : value.toFixed(1);
+}
+
+function formatCloudParamLine(label, values) {
+  return `${label}: ${PARAM_KEYS
+    .map((key) => `${key} ${formatCloudParamValue(key, values[key])}`)
+    .join(' · ')}`;
+}
+
+function updateCloudDebug() {
+  if (!cloudDebugEl) return;
+  const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
+  const winnerPerson = getPersonForWinnerSnapshot(winnerSnapshot);
+  const targetValues = winnerPerson ? winnerPerson.cloudParams : cloudTarget;
+  const winnerLabel = winnerPerson ? formatPersonLabel(winnerPerson) : 'none';
+
+  cloudDebugEl.textContent = [
+    formatCloudParamLine('Current', cloudCurrent),
+    formatCloudParamLine(`Target ${winnerLabel}`, targetValues),
+  ].join('\n');
+}
+
+// ── DEBUG UI ─────────────────────────────────────────────────
+const videoPanelEls = Array.from(document.querySelectorAll('.videoPanel'));
+let faceApiReady = false;
+let faceApiLoading = null;
+const FACE_MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
+const VIDEO_LOAD_DETECTION_DELAY_MS = 350;
+const SUN_PULSE_WINNER_HOLD_MS = 1750;
+const SUN_PULSE_CLEAR_WINNER_RATIO = 1.22;
+const SUN_PULSE_CONFIRMED_GRACE_MS = 600;
+const RECENT_TRACK_MAX_AGE_FRAMES = 18;
+const RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES = 1;
+const RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.36;
+const GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.34;
+const GLOBAL_DESCRIPTOR_MATCH_MARGIN = 0.03;
+const RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.42;
+const RELAXED_DESCRIPTOR_MATCH_MARGIN = 0.015;
+const DESCRIPTOR_UPDATE_MAX_DISTANCE = 0.30;
+const MAX_DESCRIPTOR_SAMPLES = 6;
+const STALE_TRACK_MAX_AGE_FRAMES = 180;
+const PENDING_STALE_MAX_AGE_FRAMES = 24;
+const NEW_FACE_CONFIRM_FRAMES = 2;
+const DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE = 0.70;
+const DEFAULT_VIDEO_SCALE = 1.00;
+const CAMERA_RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES = 4;
+const CAMERA_RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.44;
+const CAMERA_GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.42;
+const CAMERA_GLOBAL_DESCRIPTOR_MATCH_MARGIN = 0.015;
+const CAMERA_RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.50;
+const CAMERA_RELAXED_DESCRIPTOR_MATCH_MARGIN = 0.008;
+const CAMERA_DESCRIPTOR_UPDATE_MAX_DISTANCE = 0.38;
+const CAMERA_NEW_FACE_CONFIRM_FRAMES = 3;
+const CAMERA_PRIMARY_REACQUIRE_MAX_DISTANCE = 0.62;
+const CAMERA_PRIMARY_REACQUIRE_MAX_AGE_MS = 15000;
+const CAMERA_MIN_DETECTION_SCORE = 0.62;
+const CAMERA_MAX_KNOWN_REUSE_DISTANCE = 0.68;
+const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.82;
+const FILE_MIN_DETECTION_SCORE = 0.58;
+const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.56;
+const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.64;
+const panelStates = videoPanelEls.map(createPanelState);
+
+function createPanelState(panelEl, index) {
+  const faceOverlayEl = panelEl.querySelector('.faceOverlay');
+  const state = {
+    index,
+    panelEl,
+    sourceType: panelEl.dataset.sourceType || 'file',
+    videoFileInputEl: panelEl.querySelector('.videoFileInput'),
+    cameraToggleButtonEl: panelEl.querySelector('.cameraToggleButton'),
+    loadedVideoEl: panelEl.querySelector('.loadedVideo'),
+    videoStageEl: panelEl.querySelector('.videoStage'),
+    videoStatusEl: panelEl.querySelector('.videoStatus'),
+    faceDistanceSliderEl: panelEl.querySelector('.faceDistanceSlider'),
+    faceDistanceValueEl: panelEl.querySelector('.faceDistanceValue'),
+    videoScaleSliderEl: panelEl.querySelector('.videoScaleSlider'),
+    videoScaleValueEl: panelEl.querySelector('.videoScaleValue'),
+    faceOverlayEl,
+    faceIdBarEl: panelEl.querySelector('.faceIdBar'),
+    faceSizeBarEl: panelEl.querySelector('.faceSizeBar'),
+    faceOverlayCtx: faceOverlayEl.getContext('2d'),
+    processCanvas: document.createElement('canvas'),
+    processCtx: null,
+    loadedVideoUrl: null,
+    mediaStream: null,
+    detectLoopHandle: 0,
+    detectLoopStartTimeout: 0,
+    visibleFaces: [],
+    knownFaces: [],
+    pendingFaces: [],
+    detectionFrameIndex: 0,
+    faceDescriptorMaxDistance: Number(panelEl.querySelector('.faceDistanceSlider')?.value || DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE),
+    videoScale: Number(panelEl.querySelector('.videoScaleSlider')?.value || DEFAULT_VIDEO_SCALE),
+    detectionSourceWidth: 0,
+    detectionSourceHeight: 0,
+    primaryPersonId: null,
+    primarySeenAtMs: 0,
+  };
+  state.processCtx = state.processCanvas.getContext('2d');
+  return state;
+}
+
+function getRecentSpatialOnlyMaxAgeFrames(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES : RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES;
+}
+
+function getRecentDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE : RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getGlobalDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE : GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getGlobalDescriptorMatchMargin(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_GLOBAL_DESCRIPTOR_MATCH_MARGIN : GLOBAL_DESCRIPTOR_MATCH_MARGIN;
+}
+
+function getRelaxedDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE : RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getRelaxedDescriptorMatchMargin(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RELAXED_DESCRIPTOR_MATCH_MARGIN : RELAXED_DESCRIPTOR_MATCH_MARGIN;
+}
+
+function getDescriptorUpdateMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_DESCRIPTOR_UPDATE_MAX_DISTANCE : DESCRIPTOR_UPDATE_MAX_DISTANCE;
+}
+
+function getNewFaceConfirmFrames(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_NEW_FACE_CONFIRM_FRAMES : NEW_FACE_CONFIRM_FRAMES;
+}
+
+function getMinDetectionScore(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MIN_DETECTION_SCORE : FILE_MIN_DETECTION_SCORE;
+}
+
+function getMaxKnownReuseDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MAX_KNOWN_REUSE_DISTANCE : FILE_MAX_KNOWN_REUSE_DISTANCE;
+}
+
+function getMaxNewFaceKnownDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE : FILE_MAX_NEW_FACE_KNOWN_DISTANCE;
+}
+
+function updateFaceDistanceUi(panelState) {
+  if (!panelState.faceDistanceValueEl) return;
+  panelState.faceDistanceValueEl.textContent = panelState.faceDescriptorMaxDistance.toFixed(2);
+}
+
+function updateVideoScaleUi(panelState) {
+  if (!panelState.videoScaleValueEl) return;
+  panelState.videoScaleValueEl.textContent = `${panelState.videoScale.toFixed(2)}x`;
+}
+
+function applyVideoScale(panelState) {
+  panelState.videoStageEl.style.width = `${panelState.videoScale * 100}%`;
+  resizeFaceOverlay(panelState);
+  updateFaceSizeBar(panelState);
+  updatePanelStatus(panelState);
+}
+
+for (const panelState of panelStates) {
+  if (panelState.faceDistanceSliderEl) {
+    panelState.faceDistanceSliderEl.addEventListener('input', () => {
+      panelState.faceDescriptorMaxDistance = Number(panelState.faceDistanceSliderEl.value);
+      updateFaceDistanceUi(panelState);
+    });
+  }
+  if (panelState.videoScaleSliderEl) {
+    panelState.videoScaleSliderEl.addEventListener('input', () => {
+      panelState.videoScale = Number(panelState.videoScaleSliderEl.value);
+      updateVideoScaleUi(panelState);
+      applyVideoScale(panelState);
+    });
+  }
+  updateFaceDistanceUi(panelState);
+  updateVideoScaleUi(panelState);
+  applyVideoScale(panelState);
+}
+
+function formatFaceLabel(face) {
+  return `${face.personCode} ${face.personIndex}`;
+}
+
+function formatPersonLabel(person) {
+  return `${person.personCode} ${person.id}`;
+}
+
+function setActivePerson(person) {
+  activePerson = person;
+  cloudTarget = { ...person.cloudParams };
+}
+
+function stopActivePersonShift() {
+  activePerson = null;
+  cloudTarget = { ...cloudCurrent };
+}
+
+function resetWinnerPulseTracking() {
+  pulseConfirmedWinnerKey = null;
+  pulsePendingWinnerKey = null;
+  pulsePendingSinceMs = 0;
+  pulseConfirmedWinnerSeenAtMs = 0;
+}
+
+function createTrackedPerson() {
+  return registerPerson();
+}
+
+function getBoxCenter(box) {
+  return {
+    x: box.x + box.width * 0.5,
+    y: box.y + box.height * 0.5,
+  };
+}
+
+function getPointsCenter(points) {
+  if (!points || !points.length) return { x: 0, y: 0 };
+  let x = 0;
+  let y = 0;
+  for (const point of points) {
+    x += point.x;
+    y += point.y;
+  }
+  return { x: x / points.length, y: y / points.length };
+}
+
+function getAreaRatio(a, b) {
+  const areaA = Math.max(1, getFaceArea(a));
+  const areaB = Math.max(1, getFaceArea(b));
+  return areaA > areaB ? areaA / areaB : areaB / areaA;
+}
+
+function getSpatialMatchScore(a, b) {
+  const centerA = getBoxCenter(a);
+  const centerB = getBoxCenter(b);
+  const dx = centerA.x - centerB.x;
+  const dy = centerA.y - centerB.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const sizeRef = Math.max(
+    1,
+    Math.sqrt(getFaceArea(a)),
+    Math.sqrt(getFaceArea(b))
+  );
+  const normalizedDistance = distance / sizeRef;
+  const areaRatio = getAreaRatio(a, b);
+  return normalizedDistance + (areaRatio - 1) * 0.35;
+}
+
+function isSpatialMatch(a, b) {
+  if (!a || !b) return false;
+  const areaRatio = getAreaRatio(a, b);
+  if (areaRatio > 2.8) return false;
+  return getSpatialMatchScore(a, b) < 0.9;
+}
+
+function isDetectionUsable(panelState, detection) {
+  if (!detection || !detection.detection || detection.detection.score < getMinDetectionScore(panelState)) return false;
+  if (!detection.landmarks) return false;
+
+  const leftEye = getPointsCenter(detection.landmarks.getLeftEye());
+  const rightEye = getPointsCenter(detection.landmarks.getRightEye());
+  const nose = getPointsCenter(detection.landmarks.getNose());
+  const mouth = getPointsCenter(detection.landmarks.getMouth());
+  const eyeMidX = (leftEye.x + rightEye.x) * 0.5;
+  const eyeDist = Math.max(1, Math.abs(rightEye.x - leftEye.x));
+
+  const noseOffset = Math.abs(nose.x - eyeMidX) / eyeDist;
+  const mouthOffset = Math.abs(mouth.x - eyeMidX) / eyeDist;
+  const eyeLevelDelta = Math.abs(rightEye.y - leftEye.y) / eyeDist;
+
+  return noseOffset <= 0.27 && mouthOffset <= 0.29 && eyeLevelDelta <= 0.17;
+}
+
+function cloneDescriptor(descriptor) {
+  if (!descriptor) return null;
+  return descriptor.slice ? descriptor.slice() : new Float32Array(descriptor);
+}
+
+function getDescriptorSamples(entry) {
+  if (!entry) return [];
+  if (entry.descriptorSamples && entry.descriptorSamples.length) {
+    return entry.descriptorSamples;
+  }
+  return entry.descriptor ? [entry.descriptor] : [];
+}
+
+function getBestDescriptorDistance(entry, descriptor) {
+  if (!entry || !descriptor) return Infinity;
+  const samples = getDescriptorSamples(entry);
+  if (!samples.length) return Infinity;
+
+  let bestDistance = Infinity;
+  for (const sample of samples) {
+    const distance = faceapi.euclideanDistance(sample, descriptor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+    }
+  }
+  return bestDistance;
+}
+
+function getBestKnownFaceDistance(panelState, descriptor, usedKnownPersonIds = new Set()) {
+  let bestKnownFace = null;
+  let bestDistance = Infinity;
+
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    if (!getDescriptorSamples(knownFace).length) continue;
+    const distance = getBestDescriptorDistance(knownFace, descriptor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestKnownFace = knownFace;
+    }
+  }
+
+  return { knownFace: bestKnownFace, distance: bestDistance };
+}
+
+function addDescriptorSample(entry, descriptor) {
+  if (!entry || !descriptor) return;
+  if (!entry.descriptorSamples) {
+    entry.descriptorSamples = getDescriptorSamples(entry).map(cloneDescriptor).filter(Boolean);
+  }
+
+  const bestDistance = getBestDescriptorDistance(entry, descriptor);
+  if (bestDistance <= 0.12) return;
+
+  entry.descriptorSamples.push(cloneDescriptor(descriptor));
+  if (entry.descriptorSamples.length > MAX_DESCRIPTOR_SAMPLES) {
+    entry.descriptorSamples.shift();
+  }
+  entry.descriptor = entry.descriptorSamples[entry.descriptorSamples.length - 1];
+}
+
+function updateKnownFaceTrack(panelState, knownFace, descriptor, box) {
+  if (descriptor && shouldUpdateKnownFaceDescriptor(panelState, knownFace, descriptor)) {
+    addDescriptorSample(knownFace, descriptor);
+  }
+  knownFace.box = box;
+  knownFace.lastSeenAt = panelState.detectionFrameIndex;
+}
+
+function shouldUpdateKnownFaceDescriptor(panelState, knownFace, descriptor) {
+  if (!descriptor) return false;
+  if (!getDescriptorSamples(knownFace).length) return true;
+  const distance = getBestDescriptorDistance(knownFace, descriptor);
+  return distance <= getDescriptorUpdateMaxDistance(panelState);
+}
+
+function cleanupFaceTrackingState(panelState) {
+  panelState.pendingFaces = panelState.pendingFaces.filter(
+    (pendingFace) => panelState.detectionFrameIndex - pendingFace.lastSeenAt <= PENDING_STALE_MAX_AGE_FRAMES
+  );
+}
+
+function clearKnownFaceSpatialState(panelState) {
+  for (const knownFace of panelState.knownFaces) {
+    knownFace.box = null;
+    knownFace.lastSeenAt = -Infinity;
+  }
+}
+
+function getFaceArea(box) {
+  return box.width * box.height;
+}
+
+function getRenderedFaceMetrics(panelState, box) {
+  const sourceWidth = panelState.detectionSourceWidth || panelState.loadedVideoEl.videoWidth || panelState.faceOverlayEl.width || 1;
+  const sourceHeight = panelState.detectionSourceHeight || panelState.loadedVideoEl.videoHeight || panelState.faceOverlayEl.height || 1;
+  const containerWidth = panelState.faceOverlayEl.width || panelState.videoStageEl.clientWidth || 1;
+  const containerHeight = panelState.faceOverlayEl.height || panelState.videoStageEl.clientHeight || 1;
+  const containScale = Math.min(containerWidth / sourceWidth, containerHeight / sourceHeight);
+  const drawnWidth = sourceWidth * containScale;
+  const drawnHeight = sourceHeight * containScale;
+  const offsetX = (containerWidth - drawnWidth) / 2;
+  const offsetY = (containerHeight - drawnHeight) / 2;
+
+  return {
+    x: box.x * containScale + offsetX,
+    y: box.y * containScale + offsetY,
+    width: box.width * containScale,
+    height: box.height * containScale,
+    area: box.width * containScale * box.height * containScale,
+  };
+}
+
+function prepareProcessingFrame(panelState) {
+  const sourceWidth = panelState.loadedVideoEl.videoWidth || 0;
+  const sourceHeight = panelState.loadedVideoEl.videoHeight || 0;
+  if (!sourceWidth || !sourceHeight) return null;
+
+  const scaledWidth = Math.max(64, Math.round(sourceWidth * panelState.videoScale));
+  const scaledHeight = Math.max(64, Math.round(sourceHeight * panelState.videoScale));
+
+  if (panelState.processCanvas.width !== scaledWidth) {
+    panelState.processCanvas.width = scaledWidth;
+  }
+  if (panelState.processCanvas.height !== scaledHeight) {
+    panelState.processCanvas.height = scaledHeight;
+  }
+
+  panelState.processCtx.clearRect(0, 0, scaledWidth, scaledHeight);
+  panelState.processCtx.drawImage(panelState.loadedVideoEl, 0, 0, scaledWidth, scaledHeight);
+  panelState.detectionSourceWidth = scaledWidth;
+  panelState.detectionSourceHeight = scaledHeight;
+  return panelState.processCanvas;
+}
+
+function updatePanelStatus(panelState) {
+  if (!panelState.videoStatusEl) return;
+  if (!panelState.loadedVideoUrl && !panelState.mediaStream) {
+    panelState.videoStatusEl.textContent = panelState.sourceType === 'camera' ? 'Camera off' : 'No video loaded';
+    return;
+  }
+
+  const largestFace = getLargestVisibleFace(panelState);
+  if (!largestFace) {
+    panelState.videoStatusEl.textContent = 'Active none · holding';
+    return;
+  }
+
+  const person = people.find((entry) => entry.id === largestFace.personId);
+  const activeLabel = person ? formatPersonLabel(person) : 'none';
+  panelState.videoStatusEl.textContent = `Active ${activeLabel} · shifting · scale ${panelState.videoScale.toFixed(2)}x`;
+}
+
+function getLargestVisibleFace(panelState) {
+  let largestFace = null;
+  let largestArea = -1;
+  for (const face of panelState.visibleFaces) {
+    const area = getRenderedFaceMetrics(panelState, face.box).area;
+    if (area > largestArea) {
+      largestArea = area;
+      largestFace = face;
+    }
+  }
+  return largestFace;
+}
+
+function updatePrimaryFaceMemory(panelState) {
+  if (panelState.sourceType !== 'camera') return;
+  const primaryFace = getLargestVisibleFace(panelState);
+  if (!primaryFace) return;
+  panelState.primaryPersonId = primaryFace.personId;
+  panelState.primarySeenAtMs = performance.now();
+}
+
+async function activatePanelVideo(panelState, statusLabel) {
+  resetTrackedFaces(panelState);
+  resizeFaceOverlay(panelState);
+  panelState.videoStageEl.classList.add('hasVideo');
+  if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = statusLabel;
+  await ensureFaceApiReady();
+  await panelState.loadedVideoEl.play();
+  startFaceDetectionLoop(panelState);
+  updatePanelStatus(panelState);
+  updateCloudTargetFromPanels();
+}
+
+function stopPanelMedia(panelState, { preserveUrl = false } = {}) {
+  stopFaceDetectionLoop(panelState);
+  if (!preserveUrl && panelState.loadedVideoUrl) {
+    URL.revokeObjectURL(panelState.loadedVideoUrl);
+    panelState.loadedVideoUrl = null;
+  }
+  if (panelState.mediaStream) {
+    for (const track of panelState.mediaStream.getTracks()) track.stop();
+    panelState.mediaStream = null;
+  }
+  panelState.loadedVideoEl.pause();
+  panelState.loadedVideoEl.srcObject = null;
+  if (!preserveUrl) {
+    panelState.loadedVideoEl.removeAttribute('src');
+    panelState.loadedVideoEl.load();
+  }
+  panelState.videoStageEl.classList.remove('hasVideo');
+  resetTrackedFaces(panelState);
+  updatePanelStatus(panelState);
+  updateCloudTargetFromPanels();
+  if (panelState.cameraToggleButtonEl) {
+    panelState.cameraToggleButtonEl.textContent = 'Start Camera';
+  }
+}
+
+async function startCameraPanel(panelState) {
+  if (panelState.mediaStream) return;
+  stopPanelMedia(panelState);
+  if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Requesting camera...';
+  const mediaStream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: 'user',
+    },
+    audio: false,
+  });
+  panelState.mediaStream = mediaStream;
+  panelState.loadedVideoEl.srcObject = mediaStream;
+  panelState.loadedVideoUrl = null;
+  if (panelState.cameraToggleButtonEl) {
+    panelState.cameraToggleButtonEl.textContent = 'Stop Camera';
+  }
+  await activatePanelVideo(panelState, 'Starting camera...');
+}
+
+// ── VIDEO LOADER ────────────────────────────────────────────
+for (const panelState of panelStates) {
+  if (panelState.videoFileInputEl) {
+  panelState.videoFileInputEl.addEventListener('change', async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  if (file.type && file.type !== 'video/mp4') {
+    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Please choose an MP4 file';
+    panelState.videoFileInputEl.value = '';
+    return;
+  }
+
+  if (panelState.loadedVideoUrl) {
+    URL.revokeObjectURL(panelState.loadedVideoUrl);
+  }
+
+  stopPanelMedia(panelState, { preserveUrl: true });
+  panelState.loadedVideoUrl = URL.createObjectURL(file);
+  panelState.loadedVideoEl.src = panelState.loadedVideoUrl;
+  panelState.loadedVideoEl.currentTime = 0;
+  panelState.loadedVideoEl.muted = true;
+  panelState.loadedVideoEl.defaultMuted = true;
+
+  try {
+    await activatePanelVideo(panelState, `Loading ${file.name}...`);
+  } catch (error) {
+    console.error(error);
+    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = `Loaded ${file.name}, playback blocked`;
+  }
+  });
+  }
+
+  if (panelState.cameraToggleButtonEl) {
+    panelState.cameraToggleButtonEl.addEventListener('click', async () => {
+      if (panelState.mediaStream) {
+        stopPanelMedia(panelState);
+        return;
+      }
+
+      try {
+        await startCameraPanel(panelState);
+      } catch (error) {
+        console.error(error);
+        if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Camera unavailable';
+        if (panelState.cameraToggleButtonEl) {
+          panelState.cameraToggleButtonEl.textContent = 'Start Camera';
+        }
+      }
+    });
+  }
+
+  panelState.loadedVideoEl.addEventListener('loadedmetadata', () => {
+    resizeFaceOverlay(panelState);
+  });
+
+  panelState.loadedVideoEl.addEventListener('play', () => {
+    startFaceDetectionLoop(panelState);
+  });
+
+  panelState.loadedVideoEl.addEventListener('pause', () => {
+    stopFaceDetectionLoop(panelState);
+    updatePanelStatus(panelState);
+    updateCloudTargetFromPanels();
+  });
+
+  panelState.loadedVideoEl.addEventListener('ended', () => {
+    stopFaceDetectionLoop(panelState);
+    updatePanelStatus(panelState);
+    updateCloudTargetFromPanels();
+  });
+}
+
+window.addEventListener('resize', () => {
+  for (const panelState of panelStates) resizeFaceOverlay(panelState);
+});
+
+// ── FACE API ────────────────────────────────────────────────
+async function ensureFaceApiReady() {
+  if (faceApiReady) return;
+  if (!faceApiLoading) {
+    for (const panelState of panelStates) {
+      if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: loading detector';
+    }
+    faceApiLoading = Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL),
+    ])
+      .then(() => {
+        faceApiReady = true;
+      });
+  }
+  await faceApiLoading;
+}
+
+function resizeFaceOverlay(panelState) {
+  const width = panelState.videoStageEl.clientWidth;
+  const height = panelState.videoStageEl.clientHeight;
+  if (!width || !height) return;
+  panelState.faceOverlayEl.width = width;
+  panelState.faceOverlayEl.height = height;
+  drawTrackedFaces(panelState);
+}
+
+function resetTrackedFaces(panelState) {
+  panelState.visibleFaces = [];
+  panelState.pendingFaces = [];
+  panelState.detectionSourceWidth = 0;
+  panelState.detectionSourceHeight = 0;
+  panelState.primaryPersonId = null;
+  panelState.primarySeenAtMs = 0;
+  clearKnownFaceSpatialState(panelState);
+  if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: none';
+  if (panelState.faceSizeBarEl) panelState.faceSizeBarEl.textContent = 'Sizes: none';
+  clearFaceOverlay(panelState);
+}
+
+function clearFaceOverlay(panelState) {
+  panelState.faceOverlayCtx.clearRect(0, 0, panelState.faceOverlayEl.width, panelState.faceOverlayEl.height);
+}
+
+function toggleVideoPanel() {
+  for (const panelState of panelStates) {
+    panelState.panelEl.classList.toggle('isHidden');
+  }
+}
+
+window.addEventListener('keydown', (event) => {
+  if (event.defaultPrevented || event.repeat) return;
+  if (event.key !== 'd' && event.key !== 'D') return;
+
+  const target = event.target;
+  const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+  if (target && (target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select')) {
+    return;
+  }
+
+  event.preventDefault();
+  toggleVideoPanel();
+});
+
+function startFaceDetectionLoop(panelState) {
+  if (!faceApiReady || panelState.loadedVideoEl.paused || panelState.loadedVideoEl.ended) return;
+  if (panelState.detectLoopHandle || panelState.detectLoopStartTimeout) return;
+  const tick = async () => {
+    panelState.detectLoopHandle = 0;
+    await detectFacesFrame(panelState);
+    if (!panelState.loadedVideoEl.paused && !panelState.loadedVideoEl.ended) {
+      panelState.detectLoopHandle = requestAnimationFrame(tick);
+    }
+  };
+  if (panelState.videoStatusEl) {
+    panelState.videoStatusEl.textContent = `Starting detection in ${(VIDEO_LOAD_DETECTION_DELAY_MS / 1000).toFixed(1)}s`;
+  }
+  panelState.detectLoopStartTimeout = window.setTimeout(() => {
+    panelState.detectLoopStartTimeout = 0;
+    if (!panelState.loadedVideoEl.paused && !panelState.loadedVideoEl.ended) {
+      panelState.detectLoopHandle = requestAnimationFrame(tick);
+    }
+  }, VIDEO_LOAD_DETECTION_DELAY_MS);
+}
+
+function stopFaceDetectionLoop(panelState) {
+  if (panelState.detectLoopStartTimeout) {
+    clearTimeout(panelState.detectLoopStartTimeout);
+    panelState.detectLoopStartTimeout = 0;
+  }
+  if (!panelState.detectLoopHandle) return;
+  cancelAnimationFrame(panelState.detectLoopHandle);
+  panelState.detectLoopHandle = 0;
+}
+
+async function detectFacesFrame(panelState) {
+  if (!faceApiReady || panelState.loadedVideoEl.readyState < 2) return;
+  try {
+    panelState.detectionFrameIndex += 1;
+    const processCanvas = prepareProcessingFrame(panelState);
+    if (!processCanvas) return;
+    const detections = await faceapi
+      .detectAllFaces(
+        processCanvas,
+        new faceapi.TinyFaceDetectorOptions({
+          inputSize: 416,
+          scoreThreshold: 0.45,
+        })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    cleanupFaceTrackingState(panelState);
+    panelState.visibleFaces = assignVisibleFaces(panelState, detections);
+    updatePrimaryFaceMemory(panelState);
+    updateCloudTargetFromPanels();
+    updateFaceIdBar(panelState);
+    updateFaceSizeBar(panelState);
+    updatePanelStatus(panelState);
+    drawTrackedFaces(panelState);
+  } catch (error) {
+    console.error(error);
+    stopFaceDetectionLoop(panelState);
+    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Face detection error';
+  }
+}
+
+function assignVisibleFaces(panelState, detections) {
+  const nextVisibleFaces = [];
+  const usedKnownPersonIds = new Set();
+  for (const detection of detections) {
+    if (!isDetectionUsable(panelState, detection)) continue;
+    const box = detection.detection.box;
+    const descriptor = detection.descriptor;
+    const person = getOrCreateKnownPerson(panelState, descriptor, box, usedKnownPersonIds);
+    if (!person) continue;
+    usedKnownPersonIds.add(person.id);
+    nextVisibleFaces.push({
+      personId: person.id,
+      personCode: person.personCode,
+      personIndex: person.id,
+      box,
+      descriptor,
+      score: detection.detection.score,
+    });
+  }
+  return nextVisibleFaces;
+}
+
+function updateFaceIdBar(panelState) {
+  if (!panelState.faceIdBarEl) return;
+  panelState.faceIdBarEl.textContent = panelState.visibleFaces.length
+    ? `Persons: ${panelState.visibleFaces.map(formatFaceLabel).join(' · ')}`
+    : 'Persons: none';
+}
+
+function updateFaceSizeBar(panelState) {
+  if (!panelState.faceSizeBarEl) return;
+  if (!panelState.visibleFaces.length) {
+    panelState.faceSizeBarEl.textContent = `Sizes: none · scale ${panelState.videoScale.toFixed(2)}x`;
+    return;
+  }
+
+  panelState.faceSizeBarEl.textContent = `Sizes: ${panelState.visibleFaces
+    .map((face) => `${formatFaceLabel(face)} ${Math.round(getRenderedFaceMetrics(panelState, face.box).area)}`)
+    .join(' · ')} · scale ${panelState.videoScale.toFixed(2)}x`;
+}
+
+function getLargestVisibleFaceAcrossPanels() {
+  let bestPanelState = null;
+  let bestFace = null;
+  let bestArea = -1;
+  let secondBestArea = -1;
+
+  for (const panelState of panelStates) {
+    const face = getLargestVisibleFace(panelState);
+    if (!face) continue;
+    const area = getRenderedFaceMetrics(panelState, face.box).area;
+    if (area > bestArea) {
+      secondBestArea = bestArea;
+      bestArea = area;
+      bestFace = face;
+      bestPanelState = panelState;
+    } else if (area > secondBestArea) {
+      secondBestArea = area;
+    }
+  }
+
+  return { panelState: bestPanelState, face: bestFace, area: bestArea, secondArea: secondBestArea };
+}
+
+function getWinnerKey(panelState, face) {
+  if (!panelState || !face) return null;
+  return `${panelState.index}:${face.personId}`;
+}
+
+function getPersonForWinnerSnapshot(winnerSnapshot) {
+  if (!winnerSnapshot || !winnerSnapshot.face) return null;
+  return people.find((entry) => entry.id === winnerSnapshot.face.personId) || null;
+}
+
+function isClearGlobalWinner(winnerSnapshot) {
+  if (!winnerSnapshot.face || winnerSnapshot.area <= 0) return false;
+  if (winnerSnapshot.secondArea <= 0) return true;
+  return winnerSnapshot.area >= winnerSnapshot.secondArea * SUN_PULSE_CLEAR_WINNER_RATIO;
+}
+
+function updateWinnerPulseState(winnerSnapshot, now) {
+  if (!winnerSnapshot.face || !isClearGlobalWinner(winnerSnapshot)) {
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    if (pulseConfirmedWinnerKey && now - pulseConfirmedWinnerSeenAtMs <= SUN_PULSE_CONFIRMED_GRACE_MS) {
+      return true;
+    }
+    pulseConfirmedWinnerKey = null;
+    pulseConfirmedWinnerSeenAtMs = 0;
+    return false;
+  }
+
+  const winnerKey = getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face);
+  if (!winnerKey || winnerKey === pulseConfirmedWinnerKey) {
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    if (winnerKey === pulseConfirmedWinnerKey) {
+      pulseConfirmedWinnerSeenAtMs = now;
+      return true;
+    }
+    return false;
+  }
+
+  if (pulsePendingWinnerKey !== winnerKey) {
+    pulsePendingWinnerKey = winnerKey;
+    pulsePendingSinceMs = now;
+    return false;
+  }
+
+  if (now - pulsePendingSinceMs >= SUN_PULSE_WINNER_HOLD_MS) {
+    pulseConfirmedWinnerKey = winnerKey;
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    pulseConfirmedWinnerSeenAtMs = now;
+    if (winnerKey !== pulseLastTriggeredWinnerKey) {
+      triggerSunPulse();
+      pulseLastTriggeredWinnerKey = winnerKey;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+function updateCloudTargetFromPanels() {
+  const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
+  if (!winnerSnapshot.face) {
+    resetWinnerPulseTracking();
+    stopActivePersonShift();
+    return;
+  }
+
+  const confirmedWinnerStable = updateWinnerPulseState(winnerSnapshot, performance.now());
+  const currentWinnerKey = getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face);
+  const canUseWinner = pulseConfirmedWinnerKey && currentWinnerKey === pulseConfirmedWinnerKey;
+
+  if (!canUseWinner && !confirmedWinnerStable) {
+    return;
+  }
+
+  const person = getPersonForWinnerSnapshot(winnerSnapshot);
+  if (!person) {
+    return;
+  }
+
+  setActivePerson(person);
+}
+
+function isGlobalWinningFace(panelState, face) {
+  const winner = getLargestVisibleFaceAcrossPanels();
+  return Boolean(
+    winner.panelState &&
+    winner.face &&
+    winner.panelState.index === panelState.index &&
+    winner.face.personId === face.personId
+  );
+}
+
+function getRecentKnownFaceMatch(panelState, descriptor, box, usedKnownPersonIds) {
+  let bestKnownFace = null;
+  let bestScore = Infinity;
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    const ageFrames = panelState.detectionFrameIndex - knownFace.lastSeenAt;
+    if (ageFrames > RECENT_TRACK_MAX_AGE_FRAMES) continue;
+    if (!isSpatialMatch(box, knownFace.box)) continue;
+
+    const spatialScore = getSpatialMatchScore(box, knownFace.box);
+    let score = spatialScore;
+
+    if (descriptor && getDescriptorSamples(knownFace).length) {
+      const descriptorDistance = getBestDescriptorDistance(knownFace, descriptor);
+      if (descriptorDistance > Math.min(panelState.faceDescriptorMaxDistance, getRecentDescriptorMatchMaxDistance(panelState))) continue;
+      score += descriptorDistance * 0.75;
+    } else if (ageFrames > getRecentSpatialOnlyMaxAgeFrames(panelState)) {
+      continue;
+    } else {
+      score += ageFrames * 0.1;
+    }
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestKnownFace = knownFace;
+    }
+  }
+  return bestKnownFace;
+}
+
+function getPrimaryCameraReacquireMatch(panelState, descriptor, usedKnownPersonIds) {
+  if (panelState.sourceType !== 'camera') return null;
+  if (!descriptor || !panelState.primaryPersonId) return null;
+  if (performance.now() - panelState.primarySeenAtMs > CAMERA_PRIMARY_REACQUIRE_MAX_AGE_MS) return null;
+
+  const knownFace = panelState.knownFaces.find((entry) => entry.personId === panelState.primaryPersonId);
+  if (!knownFace || usedKnownPersonIds.has(knownFace.personId)) return null;
+  if (!getDescriptorSamples(knownFace).length) return null;
+
+  const distance = getBestDescriptorDistance(knownFace, descriptor);
+  if (distance > Math.min(panelState.faceDescriptorMaxDistance, CAMERA_PRIMARY_REACQUIRE_MAX_DISTANCE)) return null;
+  return knownFace;
+}
+
+function getDescriptorKnownFaceMatch(
+  panelState,
+  descriptor,
+  usedKnownPersonIds,
+  {
+    maxDistance = getGlobalDescriptorMatchMaxDistance(panelState),
+    minMargin = getGlobalDescriptorMatchMargin(panelState),
+  } = {}
+) {
+  let bestKnownFace = null;
+  let bestDistance = Infinity;
+  let secondBestDistance = Infinity;
+  const effectiveMaxDistance = Math.min(panelState.faceDescriptorMaxDistance, maxDistance);
+
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    if (!getDescriptorSamples(knownFace).length) continue;
+    const distance = getBestDescriptorDistance(knownFace, descriptor);
+    if (distance < bestDistance) {
+      secondBestDistance = bestDistance;
+      bestDistance = distance;
+      bestKnownFace = knownFace;
+    } else if (distance < secondBestDistance) {
+      secondBestDistance = distance;
+    }
+  }
+
+  if (!bestKnownFace || bestDistance > effectiveMaxDistance) return null;
+  if (Number.isFinite(secondBestDistance) && secondBestDistance - bestDistance < minMargin) {
+    return null;
+  }
+
+  return bestKnownFace;
+}
+
+function getPendingFaceMatch(panelState, descriptor, box) {
+  let bestPendingFace = null;
+  let bestScore = Infinity;
+  for (const pendingFace of panelState.pendingFaces) {
+    if (!isSpatialMatch(box, pendingFace.box)) continue;
+    let score = getSpatialMatchScore(box, pendingFace.box);
+    if (descriptor && getDescriptorSamples(pendingFace).length) {
+      const distance = getBestDescriptorDistance(pendingFace, descriptor);
+      if (distance > panelState.faceDescriptorMaxDistance) continue;
+      score += distance;
+    }
+    if (score < bestScore) {
+      bestScore = score;
+      bestPendingFace = pendingFace;
+    }
+  }
+  return bestPendingFace;
+}
+
+function createPendingFace(panelState, descriptor, box) {
+  if (descriptor) {
+    const nearest = getBestKnownFaceDistance(panelState, descriptor);
+    if (nearest.knownFace && nearest.distance <= getMaxNewFaceKnownDistance(panelState)) {
+      return;
+    }
+  }
+
+  panelState.pendingFaces.push({
+    descriptor: cloneDescriptor(descriptor),
+    descriptorSamples: descriptor ? [cloneDescriptor(descriptor)] : [],
+    box,
+    firstSeenAt: panelState.detectionFrameIndex,
+    lastSeenAt: panelState.detectionFrameIndex,
+    seenCount: 1,
+  });
+}
+
+function promotePendingFaceToKnown(panelState, pendingFace, descriptor, box) {
+  const reidentifiedKnownFace = getDescriptorKnownFaceMatch(
+    panelState,
+    descriptor || pendingFace.descriptor,
+    new Set(),
+    {
+      maxDistance: getRelaxedDescriptorMatchMaxDistance(panelState),
+      minMargin: getRelaxedDescriptorMatchMargin(panelState),
+    }
+  );
+
+  if (reidentifiedKnownFace) {
+    updateKnownFaceTrack(panelState, reidentifiedKnownFace, descriptor || pendingFace.descriptor, box);
+    panelState.pendingFaces = panelState.pendingFaces.filter(entry => entry !== pendingFace);
+    return people.find(person => person.id === reidentifiedKnownFace.personId) || null;
+  }
+
+  const person = createTrackedPerson();
+  panelState.knownFaces.push({
+    personId: person.id,
+    personCode: person.personCode,
+    descriptor: cloneDescriptor(descriptor || pendingFace.descriptor),
+    descriptorSamples: getDescriptorSamples(pendingFace).map(cloneDescriptor),
+    box,
+    lastSeenAt: panelState.detectionFrameIndex,
+  });
+  panelState.pendingFaces = panelState.pendingFaces.filter(entry => entry !== pendingFace);
+  return person;
+}
+
+function getOrCreateKnownPerson(panelState, descriptor, box, usedKnownPersonIds) {
+  const recentKnownFace = getRecentKnownFaceMatch(panelState, descriptor, box, usedKnownPersonIds);
+  if (recentKnownFace) {
+    updateKnownFaceTrack(panelState, recentKnownFace, descriptor, box);
+    return people.find(person => person.id === recentKnownFace.personId);
+  }
+
+  const primaryCameraMatch = getPrimaryCameraReacquireMatch(panelState, descriptor, usedKnownPersonIds);
+  if (primaryCameraMatch) {
+    updateKnownFaceTrack(panelState, primaryCameraMatch, descriptor, box);
+    return people.find(person => person.id === primaryCameraMatch.personId);
+  }
+
+  if (descriptor) {
+    const nearest = getBestKnownFaceDistance(panelState, descriptor, usedKnownPersonIds);
+    if (nearest.knownFace && nearest.distance <= Math.min(panelState.faceDescriptorMaxDistance, getMaxKnownReuseDistance(panelState))) {
+      updateKnownFaceTrack(panelState, nearest.knownFace, descriptor, box);
+      return people.find(person => person.id === nearest.knownFace.personId);
+    }
+
+    const descriptorMatch = getDescriptorKnownFaceMatch(panelState, descriptor, usedKnownPersonIds);
+    if (descriptorMatch) {
+      updateKnownFaceTrack(panelState, descriptorMatch, descriptor, box);
+      return people.find(person => person.id === descriptorMatch.personId);
+    }
+  }
+
+  const pendingFace = getPendingFaceMatch(panelState, descriptor, box);
+  if (pendingFace) {
+    addDescriptorSample(pendingFace, descriptor);
+    pendingFace.descriptor = getDescriptorSamples(pendingFace).slice(-1)[0] || pendingFace.descriptor;
+    pendingFace.box = box;
+    pendingFace.lastSeenAt = panelState.detectionFrameIndex;
+    pendingFace.seenCount += 1;
+    if (pendingFace.seenCount >= getNewFaceConfirmFrames(panelState)) {
+      return promotePendingFaceToKnown(panelState, pendingFace, descriptor, box);
+    }
+    return null;
+  }
+
+  createPendingFace(panelState, descriptor, box);
+  return null;
+}
+
+function drawTrackedFaces(panelState) {
+  clearFaceOverlay(panelState);
+  if (!panelState.faceOverlayEl.width || !panelState.faceOverlayEl.height || !panelState.visibleFaces.length) return;
+
+  panelState.faceOverlayCtx.lineWidth = 2;
+  for (const face of panelState.visibleFaces) {
+    const metrics = getRenderedFaceMetrics(panelState, face.box);
+    const x = metrics.x;
+    const y = metrics.y;
+    const width = metrics.width;
+    const height = metrics.height;
+    const isWinner = isGlobalWinningFace(panelState, face);
+    const strokeColor = isWinner ? 'rgba(110, 255, 160, 0.98)' : 'rgba(187, 233, 255, 0.95)';
+
+    panelState.faceOverlayCtx.strokeStyle = strokeColor;
+    panelState.faceOverlayCtx.strokeRect(x, y, width, height);
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function init() {
+  registerPerson();
+  setActivePerson(people[0]);
+  updateCloudDebug();
+
+  const cameraPanelState = panelStates.find((panelState) => panelState.sourceType === 'camera');
+  if (cameraPanelState) {
+    startCameraPanel(cameraPanelState).catch((error) => {
+      console.error(error);
+      if (cameraPanelState.videoStatusEl) cameraPanelState.videoStatusEl.textContent = 'Camera unavailable';
+      if (cameraPanelState.cameraToggleButtonEl) {
+        cameraPanelState.cameraToggleButtonEl.textContent = 'Start Camera';
+      }
+    });
+  }
+
+  generateCloud();
+  let lastRegen = performance.now();
+  let needsDraw = true;
+  function frame(now) {
+    updateSunPulse(now);
+    updateFps(now);
+    stepCloudTransition();
+    updateCloudDebug();
+    if (now - lastRegen >= regenMs) {
+      const t0 = performance.now();
+      generateCloud();
+      regenTime = Math.round(performance.now() - t0);
+      lastRegen = now;
+      needsDraw = true;
+    }
+    const pulseActive = sunPulseT >= 0;
+    if (needsDraw || pulseActive) {
+      cctx.clearRect(0, 0, cloudCan.width, cloudCan.height);
+      const scale = Math.max(cloudCan.width / CLOUD_W, cloudCan.height / CLOUD_H);
+      const dw = CLOUD_W * scale, dh = CLOUD_H * scale;
+      const dx = (cloudCan.width - dw) / 2, dy = (cloudCan.height - dh) / 2;
+      cctx.drawImage(buf, BLEED, BLEED, CLOUD_W, CLOUD_H, dx, dy, dw, dh);
+      if (pulseActive) drawPulseOverlay(cctx, cloudCan.width, cloudCan.height);
+      needsDraw = false;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+init();
+</script>
+</body>
+</html>
