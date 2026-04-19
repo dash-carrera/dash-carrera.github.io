@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>feels_like_interaccess_DEPLOY</title>
+<title>feels_like_launch_multiface_test</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body { background: #000; min-height: 100vh; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
@@ -13,6 +13,9 @@
     position: absolute;
     top: -9999px;
     left: -9999px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
     width: 1px;
     min-width: 0;
     height: 1px;
@@ -20,9 +23,205 @@
     opacity: 0;
     pointer-events: none;
   }
+  .videoPanels.isVisible {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 18px;
+    bottom: 18px;
+    gap: 8px;
+    width: min(23vw, 236px);
+    min-width: 196px;
+    height: auto;
+    max-height: calc(100vh - 36px);
+    overflow-x: visible;
+    overflow-y: auto;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 18;
+  }
   .videoPanel {
     width: 100%;
-    height: 100%;
+    height: auto;
+  }
+  .cloudDebugPanel {
+    display: none;
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    width: min(23.625vw, 236px);
+    min-width: 180px;
+    overflow: visible;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 50;
+    transform-origin: left bottom;
+  }
+  .cloudDebugPanel.isVisible {
+    display: block;
+    pointer-events: auto;
+    transform: scale(1.25);
+  }
+  .cloudDebugCard {
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .cloudDebugHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 7px;
+    padding: 6px 7px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .cloudDebugTitle {
+    font-size: 6px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .cloudDebugLabel {
+    font-size: 6px;
+    color: rgba(255, 255, 255, 0.64);
+  }
+  .cloudDebugTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7px;
+  }
+  .cloudDebugTable th,
+  .cloudDebugTable td {
+    padding: 4px 7px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+  }
+  .cloudDebugTable th:first-child,
+  .cloudDebugTable td:first-child {
+    text-align: left;
+  }
+  .cloudDebugTable thead th {
+    font-size: 6px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .cloudDebugTable tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .cloudCurrentControl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 4px;
+  }
+  .cloudCurrentValue {
+    min-width: 27px;
+    display: inline-block;
+  }
+  .cloudAdjustButton {
+    width: 13px;
+    height: 13px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.92);
+    font: inherit;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .cloudAdjustButton:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  @media (max-width: 1100px) {
+    .videoPanels.isVisible {
+      width: min(24vw, 228px);
+      min-width: 188px;
+    }
+  }
+  @media (max-width: 800px) {
+    .cloudDebugPanel.isVisible {
+      left: 12px;
+      right: auto;
+      bottom: 12px;
+      width: auto;
+      min-width: 0;
+    }
+    .videoPanels.isVisible {
+      right: 12px;
+      bottom: 12px;
+      width: min(38vw, 232px);
+      min-width: 180px;
+      height: auto;
+      max-height: calc(100vh - 24px);
+    }
+  }
+  .videoPanels.isVisible .videoPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 9px;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+  }
+  .videoFileInput {
+    display: none;
+  }
+  .controlRow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .controlHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .controlLabel,
+  .controlValue {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .controlValue {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .sliderInput {
+    width: 100%;
+    accent-color: rgba(187, 233, 255, 0.95);
+  }
+  .faceIdBar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 4;
+    max-width: calc(100% - 16px);
+    padding: 4px 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 7px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
   }
   .videoStage {
     position: relative;
@@ -30,6 +229,16 @@
     height: 1px;
     overflow: hidden;
     margin: 0;
+  }
+  .videoPanels.isVisible .videoStage {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    margin: 0 auto;
+    cursor: pointer;
   }
   .loadedVideo {
     display: none;
@@ -47,32 +256,222 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 2;
+  }
+  .videoStageAction {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(18, 26, 36, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease, background 160ms ease;
+  }
+  .videoStage.hasVideo .videoStageAction {
+    top: auto;
+    right: 8px;
+    left: auto;
+    bottom: 8px;
+    transform: none;
+    min-width: 0;
+    padding: 5px 8px;
+    background: rgba(18, 26, 36, 0.56);
+    opacity: 0.28;
+  }
+  .videoStage:hover .videoStageAction,
+  .videoStage:focus-visible .videoStageAction,
+  .videoStage.hasVideo:focus-within .videoStageAction {
+    opacity: 1;
+  }
+  .videoStage:focus-visible {
+    outline: 2px solid rgba(187, 233, 255, 0.72);
+    outline-offset: 2px;
+  }
+  .faceApiRail {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 20;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: right;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    opacity: 1;
+    transition: opacity 220ms ease;
+  }
+  .faceApiRail.isHidden {
+    opacity: 0;
+  }
+  .faceApiRailLabel {
+    letter-spacing: 0.18em;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .faceApiRailDetail {
+    max-width: 180px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
   }
 </style>
 </head>
 <body>
 <div class="wrap">
   <canvas id="cloud"></canvas>
+  <div class="faceApiRail" aria-live="polite">
+    <div class="faceApiRailLabel" id="faceApiStatus">face-api.js</div>
+    <div class="faceApiRailDetail" id="faceApiDetail">Loading local script...</div>
+  </div>
   <div class="videoPanels">
-    <div class="videoPanel" data-panel-index="0" data-source-type="camera">
-      <div class="videoStage">
+    <div class="videoPanel" data-panel-index="0" data-source-type="file">
+      <div class="controlRow">
+        <div class="controlHeader">
+          <span class="controlLabel">ML Scale</span>
+          <span class="controlValue videoScaleValue">1.00x</span>
+        </div>
+        <input
+          class="sliderInput videoScaleSlider"
+          type="range"
+          min="0.50"
+          max="1.50"
+          step="0.01"
+          value="1.00"
+        />
+      </div>
+      <input id="videoFileInput0" class="videoFileInput" type="file" accept="video/mp4" />
+      <div class="videoStage" tabindex="0" role="button" aria-label="Load MP4">
+        <video class="loadedVideo" muted autoplay playsinline loop></video>
+        <canvas class="faceOverlay"></canvas>
+        <div class="faceIdBar">Persons: none</div>
+        <div class="videoStageAction">Load MP4</div>
+      </div>
+    </div>
+    <div class="videoPanel" data-panel-index="1" data-source-type="file">
+      <div class="controlRow">
+        <div class="controlHeader">
+          <span class="controlLabel">ML Scale</span>
+          <span class="controlValue videoScaleValue">1.00x</span>
+        </div>
+        <input
+          class="sliderInput videoScaleSlider"
+          type="range"
+          min="0.50"
+          max="1.50"
+          step="0.01"
+          value="1.00"
+        />
+      </div>
+      <input id="videoFileInput1" class="videoFileInput" type="file" accept="video/mp4" />
+      <div class="videoStage" tabindex="0" role="button" aria-label="Load MP4">
+        <video class="loadedVideo" muted autoplay playsinline loop></video>
+        <canvas class="faceOverlay"></canvas>
+        <div class="faceIdBar">Persons: none</div>
+        <div class="videoStageAction">Load MP4</div>
+      </div>
+    </div>
+    <div class="videoPanel" data-panel-index="2" data-source-type="camera">
+      <div class="controlRow">
+        <div class="controlHeader">
+          <span class="controlLabel">ML Scale</span>
+          <span class="controlValue videoScaleValue">1.00x</span>
+        </div>
+        <input
+          class="sliderInput videoScaleSlider"
+          type="range"
+          min="0.50"
+          max="1.50"
+          step="0.01"
+          value="1.00"
+        />
+      </div>
+      <button class="cameraToggleButton" type="button" hidden aria-hidden="true" tabindex="-1">Start Camera</button>
+      <div class="videoStage" tabindex="0" role="button" aria-label="Start Camera">
         <video class="loadedVideo" muted autoplay playsinline></video>
         <canvas class="faceOverlay"></canvas>
+        <div class="faceIdBar">Persons: none</div>
+        <div class="videoStageAction">Start Camera</div>
       </div>
+    </div>
+  </div>
+  <div class="cloudDebugPanel" aria-live="polite">
+    <div class="cloudDebugCard">
+      <div class="cloudDebugHeader">
+        <div class="cloudDebugTitle">Cloud Params</div>
+        <div class="cloudDebugLabel" id="cloudDebugLabel">Target none</div>
+      </div>
+      <div class="cloudDebugLabel" id="cloudDetectedLabel" style="padding: 8px 12px 0;">Detected none</div>
+      <div class="cloudDebugLabel" id="cloudTransitionStatus" style="padding: 8px 12px 0;">State stable</div>
+      <div class="cloudDebugLabel" id="cloudSunburstStatus" style="padding: 8px 12px 0;">Sunburst on</div>
+      <div class="cloudDebugLabel" id="cloudDebugHint" style="padding: 8px 12px 0;">Press d to toggle debug panels. Press s to toggle sunburst.</div>
+      <table class="cloudDebugTable">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Current</th>
+            <th>Target</th>
+          </tr>
+        </thead>
+        <tbody id="cloudDebugBody"></tbody>
+      </table>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script>
+window.faceApiScriptStatus = 'loading';
+window.setFaceApiScriptStatus = function setFaceApiScriptStatus(status, detail) {
+  window.faceApiScriptStatus = status;
+  const statusEl = document.getElementById('faceApiStatus');
+  const detailEl = document.getElementById('faceApiDetail');
+  if (!statusEl || !detailEl) return;
+
+  if (status === 'ready') {
+    statusEl.textContent = 'face-api.js ready';
+    detailEl.textContent = detail || 'Local script loaded.';
+    return;
+  }
+  if (status === 'error') {
+    statusEl.textContent = 'face-api.js error';
+    detailEl.textContent = detail || 'Local script failed to load.';
+    return;
+  }
+
+  statusEl.textContent = 'face-api.js loading';
+  detailEl.textContent = detail || 'Loading local script...';
+};
+</script>
+<script src="./face-api.min.js" onload="setFaceApiScriptStatus('ready', 'Local script loaded.')" onerror="setFaceApiScriptStatus('error', 'Unable to load ./face-api.min.js')"></script>
 <script>
 // ── PERSON REGISTRY ──────────────────────────────────────────
 const people = [];
 let activePerson = null;
+let lastTransitionedPerson = null;
 let pulseConfirmedWinnerKey = null;
 let pulsePendingWinnerKey = null;
 let pulsePendingSinceMs = 0;
 let pulseConfirmedWinnerSeenAtMs = 0;
-let pulseLastTriggeredWinnerKey = null;
 
 // ── CLOUD PARAMETER SPACE ────────────────────────────────────
 const PARAM_RANGES = {
@@ -156,24 +555,107 @@ function addPersonFromNorm(norm) {
 }
 
 // ── SUN PULSE ───────────────────────────────────────────────
-let sunPulseT = -1;
-const SUN_PULSE_DURATION = 2200;
-let sunPulseStart = 0;
+let sunPulseLevel = 0;
+let sunPulseMode = 'idle';
+let sunPulseHoverPhase = 0;
+let sunPulseLastUpdateMs = 0;
+let sunPulseHasFaceLatch = false;
+let sunPulseTransitionCommitted = false;
+let sunPulseTransitionPending = false;
+let pendingTransitionPerson = null;
+let sunPulseLockedWinnerKey = null;
+let sunPulseLockedWinnerPerson = null;
+let sunPulseLockedWinnerVisible = false;
+let transitionFlashLevel = 0;
+let transitionFlashDirection = 0;
+let transitionFlashSpread = 0;
+let sunPulseCurrentFallPerMs = 0;
+const SUN_PULSE_FILL_MS = 2000;
+const SUN_PULSE_RISE_PER_MS = 1 / SUN_PULSE_FILL_MS;
+const SUN_PULSE_FALL_PER_MS = 1 / SUN_PULSE_FILL_MS;
+const TRANSITION_FLASH_RISE_PER_MS = 1 / 450;
+const TRANSITION_FLASH_FALL_PER_MS = 1 / 1300;
+const TRANSITION_FLASH_SPREAD_PER_MS = 1 / 1700;
+const SUN_PULSE_TRIGGER_LEVEL = 0.82;
+const SUN_PULSE_HOVER_MIN = 0.86;
+const SUN_PULSE_HOVER_MAX = 1.0;
+const SUN_PULSE_HOVER_SPEED = 0.0075;
 
-function triggerSunPulse() {
-  sunPulseT = 0;
-  sunPulseStart = performance.now();
+function clearSunPulseWinnerLock() {
+  sunPulseLockedWinnerKey = null;
+  sunPulseLockedWinnerPerson = null;
+  sunPulseLockedWinnerVisible = false;
+}
+
+function startSunPulseAdvance() {
+  if (sunPulseTransitionCommitted) return;
+  sunPulseMode = 'advancing';
+}
+
+function startSunPulseRecede() {
+  sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+  sunPulseMode = sunPulseLevel > 0 ? 'receding' : 'idle';
+}
+
+function startSunPulseHover() {
+  sunPulseMode = 'hovering';
 }
 
 function updateSunPulse(now) {
-  if (sunPulseT < 0) return;
-  sunPulseT = (now - sunPulseStart) / SUN_PULSE_DURATION;
-  if (sunPulseT >= 1) sunPulseT = -1;
+  if (!sunPulseLastUpdateMs) {
+    sunPulseLastUpdateMs = now;
+    return;
+  }
+
+  const dt = Math.min(80, now - sunPulseLastUpdateMs);
+  sunPulseLastUpdateMs = now;
+
+  if (sunPulseMode === 'advancing') {
+    sunPulseLevel = clamp(sunPulseLevel + dt * SUN_PULSE_RISE_PER_MS, 0, 1);
+    if (sunPulseLevel >= 1) {
+      sunPulseLevel = 1;
+      sunPulseMode = 'idle';
+      if (!sunPulseTransitionCommitted && sunPulseLockedWinnerVisible && sunPulseLockedWinnerPerson) {
+        commitSunPulseTransition(sunPulseLockedWinnerPerson);
+      }
+    }
+  } else if (sunPulseMode === 'receding') {
+    sunPulseLevel = clamp(sunPulseLevel - dt * sunPulseCurrentFallPerMs, 0, 1);
+    if (sunPulseLevel <= 0) {
+      sunPulseLevel = 0;
+      sunPulseMode = 'idle';
+      sunPulseHoverPhase = 0;
+      sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+      if (!sunPulseTransitionCommitted) {
+        clearSunPulseWinnerLock();
+      }
+    }
+  } else if (sunPulseMode === 'hovering') {
+    sunPulseHoverPhase += dt * SUN_PULSE_HOVER_SPEED;
+    const wave = (Math.sin(sunPulseHoverPhase) + 1) * 0.5;
+    sunPulseLevel = lerp(SUN_PULSE_HOVER_MIN, SUN_PULSE_HOVER_MAX, wave);
+  }
+
+  if (transitionFlashDirection > 0) {
+    transitionFlashLevel = clamp(transitionFlashLevel + dt * TRANSITION_FLASH_RISE_PER_MS, 0, 1);
+    transitionFlashSpread = clamp(transitionFlashSpread + dt * TRANSITION_FLASH_SPREAD_PER_MS, 0, 1);
+    if (transitionFlashLevel >= 1) {
+      transitionFlashLevel = 1;
+      transitionFlashDirection = -1;
+    }
+  } else if (transitionFlashDirection < 0) {
+    transitionFlashLevel = clamp(transitionFlashLevel - dt * TRANSITION_FLASH_FALL_PER_MS, 0, 1);
+    transitionFlashSpread = clamp(transitionFlashSpread + dt * TRANSITION_FLASH_SPREAD_PER_MS, 0, 1);
+    if (transitionFlashLevel <= 0) {
+      transitionFlashLevel = 0;
+      transitionFlashDirection = 0;
+      transitionFlashSpread = 0;
+    }
+  }
 }
 
 function getSunPulseIntensity() {
-  if (sunPulseT < 0) return 0;
-  return Math.sin(sunPulseT * Math.PI);
+  return sunPulseLevel;
 }
 
 // ── CLOUD RENDERER ───────────────────────────────────────────
@@ -210,18 +692,40 @@ const bgCtx=bgCan.getContext('2d');
 function drawPulseOverlay(ctx, canW, canH) {
   const pulse = getSunPulseIntensity();
   if (pulse <= 0) return;
-  const alpha = pulse * 0.45;
-  // Radial gradient: transparent center, white edges
+  const easedPulse = Math.pow(pulse, 0.68);
+  const alpha = easedPulse * 0.92;
   const cx = canW / 2, cy = canH / 2;
-  const innerR = Math.min(canW, canH) * 0.35;
+  const innerR = Math.min(canW, canH) * 0.32;
   const outerR = Math.sqrt(cx * cx + cy * cy);
   ctx.save();
+  ctx.globalCompositeOperation = 'screen';
   const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  grad.addColorStop(0, 'rgba(255,255,255,0)');
-  grad.addColorStop(0.5, `rgba(255,255,255,${clamp(alpha * 0.3, 0, 1)})`);
-  grad.addColorStop(0.8, `rgba(255,255,255,${clamp(alpha * 0.7, 0, 1)})`);
+  grad.addColorStop(0, 'rgba(255,250,235,0)');
+  grad.addColorStop(0.28, `rgba(255,246,225,${clamp(alpha * 0.04, 0, 1)})`);
+  grad.addColorStop(0.52, `rgba(255,248,232,${clamp(alpha * 0.16, 0, 1)})`);
+  grad.addColorStop(0.72, `rgba(255,252,244,${clamp(alpha * 0.46, 0, 1)})`);
+  grad.addColorStop(0.88, `rgba(255,255,255,${clamp(alpha * 0.88, 0, 1)})`);
   grad.addColorStop(1, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
   ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canW, canH);
+  ctx.restore();
+}
+
+function drawTransitionFlashOverlay(ctx, canW, canH) {
+  if (transitionFlashLevel <= 0) return;
+  const alpha = Math.pow(transitionFlashLevel, 1.05) * 0.34;
+  const cx = canW / 2, cy = canH / 2;
+  const spread = Math.pow(transitionFlashSpread, 0.9);
+  const outerR = Math.min(canW, canH) * (0.14 + spread * 0.82);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
+  coreGrad.addColorStop(0, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
+  coreGrad.addColorStop(0.16, `rgba(255,252,245,${clamp(alpha * 0.92, 0, 1)})`);
+  coreGrad.addColorStop(0.38, `rgba(255,247,228,${clamp(alpha * 0.56, 0, 1)})`);
+  coreGrad.addColorStop(0.68, `rgba(255,255,255,${clamp(alpha * 0.18, 0, 1)})`);
+  coreGrad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = coreGrad;
   ctx.fillRect(0, 0, canW, canH);
   ctx.restore();
 }
@@ -240,8 +744,14 @@ function dist6(a, b) { let s = 0; for (let i = 0; i < 6; i++) s += (a[i] - b[i])
 
 // ── FPS COUNTER ─────────────────────────────────────────────
 const fpsEl = document.getElementById('fps');
-const cloudDebugEl = document.getElementById('cloudDebug');
+const cloudDebugLabelEl = document.getElementById('cloudDebugLabel');
+const cloudDetectedLabelEl = document.getElementById('cloudDetectedLabel');
+const cloudTransitionStatusEl = document.getElementById('cloudTransitionStatus');
+const cloudSunburstStatusEl = document.getElementById('cloudSunburstStatus');
+const cloudDebugBodyEl = document.getElementById('cloudDebugBody');
 let fpsFrames = 0, fpsLast = performance.now(), regenTime = 0;
+let sunburstEnabled = true;
+let forceCloudRedraw = false;
 function updateFps(now) {
   if (!fpsEl) return;
   fpsFrames++;
@@ -265,28 +775,71 @@ function formatCloudParamLine(label, values) {
     .join(' · ')}`;
 }
 
+function getCloudParamStep(key) {
+  if (key === 'skyH' || key === 'skyS' || key === 'skyV') return 1;
+  if (key === 'turbulence') return 0.05;
+  if (key === 'noiseOffset' || key === 'noiseCeiling') return 0.01;
+  return 0.01;
+}
+
+function adjustCloudCurrentParam(key, direction) {
+  const range = PARAM_RANGES[key];
+  if (!range || !Number.isFinite(direction) || direction === 0) return;
+  const step = getCloudParamStep(key) * direction;
+  cloudCurrent[key] = clamp(cloudCurrent[key] + step, range.min, range.max);
+}
+
 function updateCloudDebug() {
-  if (!cloudDebugEl) return;
+  if (!cloudDebugBodyEl) return;
   const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
   const winnerPerson = getPersonForWinnerSnapshot(winnerSnapshot);
-  const targetValues = winnerPerson ? winnerPerson.cloudParams : cloudTarget;
+  const targetValues = cloudTarget;
+  const transitionTargetPerson = activePerson || pendingTransitionPerson || lastTransitionedPerson;
+  const transitionTargetLabel = transitionTargetPerson ? formatPersonLabel(transitionTargetPerson) : 'none';
   const winnerLabel = winnerPerson ? formatPersonLabel(winnerPerson) : 'none';
+  const transitionDistance = getCloudTransitionDistance();
+  const isSettled = isCloudTransitionSettled();
 
-  cloudDebugEl.textContent = [
-    formatCloudParamLine('Current', cloudCurrent),
-    formatCloudParamLine(`Target ${winnerLabel}`, targetValues),
-  ].join('\n');
+  if (cloudDebugLabelEl) cloudDebugLabelEl.textContent = `Transition target ${transitionTargetLabel}`;
+  if (cloudDetectedLabelEl) cloudDetectedLabelEl.textContent = `Detected ${winnerLabel}`;
+  if (cloudTransitionStatusEl) {
+    cloudTransitionStatusEl.textContent = isSettled
+      ? `State stable · distance ${transitionDistance.toFixed(3)}`
+      : `State transitioning · distance ${transitionDistance.toFixed(3)}`;
+  }
+  if (cloudSunburstStatusEl) {
+    cloudSunburstStatusEl.textContent = `Sunburst ${sunburstEnabled ? 'on' : 'off'}`;
+  }
+  cloudDebugBodyEl.innerHTML = PARAM_KEYS.map((key) => `
+    <tr>
+      <td>${key}</td>
+      <td>
+        <div class="cloudCurrentControl">
+          <button class="cloudAdjustButton" data-cloud-param="${key}" data-cloud-dir="-1" type="button">-</button>
+          <span class="cloudCurrentValue">${formatCloudParamValue(key, cloudCurrent[key])}</span>
+          <button class="cloudAdjustButton" data-cloud-param="${key}" data-cloud-dir="1" type="button">+</button>
+        </div>
+      </td>
+      <td>${formatCloudParamValue(key, targetValues[key])}</td>
+    </tr>
+  `).join('');
 }
 
 // ── DEBUG UI ─────────────────────────────────────────────────
+const videoPanelsEl = document.querySelector('.videoPanels');
+const cloudDebugPanelEl = document.querySelector('.cloudDebugPanel');
+const faceApiRailEl = document.querySelector('.faceApiRail');
+const faceApiStatusEl = document.getElementById('faceApiStatus');
+const faceApiDetailEl = document.getElementById('faceApiDetail');
 const videoPanelEls = Array.from(document.querySelectorAll('.videoPanel'));
 let faceApiReady = false;
 let faceApiLoading = null;
 const FACE_MODEL_URL = 'https://justadudewhohacks.github.io/face-api.js/models';
 const VIDEO_LOAD_DETECTION_DELAY_MS = 350;
-const SUN_PULSE_WINNER_HOLD_MS = 1750;
+const SUN_PULSE_WINNER_HOLD_MS = 450;
 const SUN_PULSE_CLEAR_WINNER_RATIO = 1.22;
 const SUN_PULSE_CONFIRMED_GRACE_MS = 600;
+const CLOUD_NEW_WINNER_READY_DISTANCE = 0.5;
 const RECENT_TRACK_MAX_AGE_FRAMES = 18;
 const RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES = 1;
 const RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.36;
@@ -311,13 +864,46 @@ const CAMERA_DESCRIPTOR_UPDATE_MAX_DISTANCE = 0.38;
 const CAMERA_NEW_FACE_CONFIRM_FRAMES = 3;
 const CAMERA_PRIMARY_REACQUIRE_MAX_DISTANCE = 0.62;
 const CAMERA_PRIMARY_REACQUIRE_MAX_AGE_MS = 15000;
-const CAMERA_MIN_DETECTION_SCORE = 0.62;
-const CAMERA_MAX_KNOWN_REUSE_DISTANCE = 0.68;
-const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.82;
-const FILE_MIN_DETECTION_SCORE = 0.58;
-const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.56;
-const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.64;
+const CAMERA_MIN_DETECTION_SCORE = 0.54;
+const CAMERA_MAX_KNOWN_REUSE_DISTANCE = 0.72;
+const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.86;
+const FILE_MIN_DETECTION_SCORE = 0.52;
+const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.60;
+const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.68;
 const panelStates = videoPanelEls.map(createPanelState);
+
+if (cloudDebugBodyEl) {
+  cloudDebugBodyEl.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-cloud-param][data-cloud-dir]');
+    if (!button) return;
+    adjustCloudCurrentParam(button.dataset.cloudParam, Number(button.dataset.cloudDir));
+    updateCloudDebug();
+  });
+}
+
+function updateFaceApiRail(statusText, detailText) {
+  if (faceApiStatusEl) faceApiStatusEl.textContent = statusText;
+  if (faceApiDetailEl) faceApiDetailEl.textContent = detailText;
+  if (faceApiRailEl) faceApiRailEl.classList.remove('isHidden');
+}
+
+function hideFaceApiRail() {
+  if (faceApiRailEl) faceApiRailEl.classList.add('isHidden');
+}
+
+function syncFaceApiRailWithScriptStatus() {
+  if (window.faceApiScriptStatus === 'error') {
+    updateFaceApiRail('face-api.js error', 'Unable to load ./face-api.min.js');
+    return;
+  }
+  if (window.faceApiScriptStatus === 'ready') {
+    updateFaceApiRail('face-api.js ready', 'Local script loaded. Waiting for models...');
+    return;
+  }
+  updateFaceApiRail('face-api.js loading', 'Loading local script...');
+}
+
+syncFaceApiRailWithScriptStatus();
 
 function createPanelState(panelEl, index) {
   const faceOverlayEl = panelEl.querySelector('.faceOverlay');
@@ -329,14 +915,11 @@ function createPanelState(panelEl, index) {
     cameraToggleButtonEl: panelEl.querySelector('.cameraToggleButton'),
     loadedVideoEl: panelEl.querySelector('.loadedVideo'),
     videoStageEl: panelEl.querySelector('.videoStage'),
-    videoStatusEl: panelEl.querySelector('.videoStatus'),
-    faceDistanceSliderEl: panelEl.querySelector('.faceDistanceSlider'),
-    faceDistanceValueEl: panelEl.querySelector('.faceDistanceValue'),
+    videoStageActionEl: panelEl.querySelector('.videoStageAction'),
     videoScaleSliderEl: panelEl.querySelector('.videoScaleSlider'),
     videoScaleValueEl: panelEl.querySelector('.videoScaleValue'),
     faceOverlayEl,
     faceIdBarEl: panelEl.querySelector('.faceIdBar'),
-    faceSizeBarEl: panelEl.querySelector('.faceSizeBar'),
     faceOverlayCtx: faceOverlayEl.getContext('2d'),
     processCanvas: document.createElement('canvas'),
     processCtx: null,
@@ -348,7 +931,7 @@ function createPanelState(panelEl, index) {
     knownFaces: [],
     pendingFaces: [],
     detectionFrameIndex: 0,
-    faceDescriptorMaxDistance: Number(panelEl.querySelector('.faceDistanceSlider')?.value || DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE),
+    faceDescriptorMaxDistance: DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE,
     videoScale: Number(panelEl.querySelector('.videoScaleSlider')?.value || DEFAULT_VIDEO_SCALE),
     detectionSourceWidth: 0,
     detectionSourceHeight: 0,
@@ -403,14 +986,22 @@ function getMaxNewFaceKnownDistance(panelState) {
   return panelState.sourceType === 'camera' ? CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE : FILE_MAX_NEW_FACE_KNOWN_DISTANCE;
 }
 
-function updateFaceDistanceUi(panelState) {
-  if (!panelState.faceDistanceValueEl) return;
-  panelState.faceDistanceValueEl.textContent = panelState.faceDescriptorMaxDistance.toFixed(2);
-}
-
 function updateVideoScaleUi(panelState) {
   if (!panelState.videoScaleValueEl) return;
   panelState.videoScaleValueEl.textContent = `${panelState.videoScale.toFixed(2)}x`;
+}
+
+function updateStageAction(panelState) {
+  if (!panelState.videoStageActionEl) return;
+  if (panelState.sourceType === 'camera') {
+    const isActive = Boolean(panelState.mediaStream);
+    panelState.videoStageActionEl.textContent = isActive ? 'Stop Camera' : 'Start Camera';
+    panelState.videoStageEl.setAttribute('aria-label', isActive ? 'Stop Camera' : 'Start Camera');
+    return;
+  }
+  const hasVideo = Boolean(panelState.loadedVideoUrl);
+  panelState.videoStageActionEl.textContent = hasVideo ? 'Replace MP4' : 'Load MP4';
+  panelState.videoStageEl.setAttribute('aria-label', hasVideo ? 'Replace MP4' : 'Load MP4');
 }
 
 function applyVideoScale(panelState) {
@@ -421,12 +1012,6 @@ function applyVideoScale(panelState) {
 }
 
 for (const panelState of panelStates) {
-  if (panelState.faceDistanceSliderEl) {
-    panelState.faceDistanceSliderEl.addEventListener('input', () => {
-      panelState.faceDescriptorMaxDistance = Number(panelState.faceDistanceSliderEl.value);
-      updateFaceDistanceUi(panelState);
-    });
-  }
   if (panelState.videoScaleSliderEl) {
     panelState.videoScaleSliderEl.addEventListener('input', () => {
       panelState.videoScale = Number(panelState.videoScaleSliderEl.value);
@@ -434,7 +1019,6 @@ for (const panelState of panelStates) {
       applyVideoScale(panelState);
     });
   }
-  updateFaceDistanceUi(panelState);
   updateVideoScaleUi(panelState);
   applyVideoScale(panelState);
 }
@@ -447,8 +1031,13 @@ function formatPersonLabel(person) {
   return `${person.personCode} ${person.id}`;
 }
 
+function isSamePerson(a, b) {
+  return Boolean(a && b && a.id === b.id);
+}
+
 function setActivePerson(person) {
   activePerson = person;
+  lastTransitionedPerson = person;
   cloudTarget = { ...person.cloudParams };
 }
 
@@ -462,6 +1051,57 @@ function resetWinnerPulseTracking() {
   pulsePendingWinnerKey = null;
   pulsePendingSinceMs = 0;
   pulseConfirmedWinnerSeenAtMs = 0;
+}
+
+function getCloudTransitionDistance() {
+  let distance = 0;
+  let hueDelta = cloudTarget.skyH - cloudCurrent.skyH;
+  if (hueDelta > 180) hueDelta -= 360;
+  if (hueDelta < -180) hueDelta += 360;
+  distance += Math.abs(hueDelta) / 20;
+  distance += Math.abs(cloudTarget.skyS - cloudCurrent.skyS) / 66;
+  distance += Math.abs(cloudTarget.skyV - cloudCurrent.skyV) / 63;
+  distance += Math.abs(cloudTarget.turbulence - cloudCurrent.turbulence) / 4;
+  distance += Math.abs(cloudTarget.noiseOffset - cloudCurrent.noiseOffset) / 0.73;
+  distance += Math.abs(cloudTarget.noiseCeiling - cloudCurrent.noiseCeiling) / 0.8;
+  return distance;
+}
+
+function isCloudTransitionSettled() {
+  return getCloudTransitionDistance() <= 0.035;
+}
+
+function isCloudReadyForNewWinner() {
+  return getCloudTransitionDistance() <= CLOUD_NEW_WINNER_READY_DISTANCE;
+}
+
+function resetSunPulseCycle() {
+  sunPulseTransitionPending = false;
+  sunPulseTransitionCommitted = false;
+  pendingTransitionPerson = null;
+  clearSunPulseWinnerLock();
+}
+
+function commitSunPulseTransition(person) {
+  if (!person || sunPulseTransitionCommitted || sunPulseTransitionPending) return;
+  sunPulseTransitionPending = false;
+  pendingTransitionPerson = null;
+  sunPulseTransitionCommitted = true;
+  transitionFlashLevel = 0;
+  transitionFlashDirection = 1;
+  transitionFlashSpread = 0;
+  sunPulseMode = 'idle';
+  sunPulseLevel = 0;
+  sunPulseHoverPhase = 0;
+  setActivePerson(person);
+}
+
+function shouldPlaySunPulseForPerson(person) {
+  if (!person) return false;
+  if (isSamePerson(person, activePerson)) return false;
+  if (isSamePerson(person, pendingTransitionPerson)) return false;
+  if (isSamePerson(person, lastTransitionedPerson)) return false;
+  return true;
 }
 
 function createTrackedPerson() {
@@ -530,7 +1170,7 @@ function isDetectionUsable(panelState, detection) {
   const mouthOffset = Math.abs(mouth.x - eyeMidX) / eyeDist;
   const eyeLevelDelta = Math.abs(rightEye.y - leftEye.y) / eyeDist;
 
-  return noseOffset <= 0.27 && mouthOffset <= 0.29 && eyeLevelDelta <= 0.17;
+  return noseOffset <= 0.36 && mouthOffset <= 0.38 && eyeLevelDelta <= 0.25;
 }
 
 function cloneDescriptor(descriptor) {
@@ -669,21 +1309,7 @@ function prepareProcessingFrame(panelState) {
 }
 
 function updatePanelStatus(panelState) {
-  if (!panelState.videoStatusEl) return;
-  if (!panelState.loadedVideoUrl && !panelState.mediaStream) {
-    panelState.videoStatusEl.textContent = panelState.sourceType === 'camera' ? 'Camera off' : 'No video loaded';
-    return;
-  }
-
-  const largestFace = getLargestVisibleFace(panelState);
-  if (!largestFace) {
-    panelState.videoStatusEl.textContent = 'Active none · holding';
-    return;
-  }
-
-  const person = people.find((entry) => entry.id === largestFace.personId);
-  const activeLabel = person ? formatPersonLabel(person) : 'none';
-  panelState.videoStatusEl.textContent = `Active ${activeLabel} · shifting · scale ${panelState.videoScale.toFixed(2)}x`;
+  updateStageAction(panelState);
 }
 
 function getLargestVisibleFace(panelState) {
@@ -707,11 +1333,10 @@ function updatePrimaryFaceMemory(panelState) {
   panelState.primarySeenAtMs = performance.now();
 }
 
-async function activatePanelVideo(panelState, statusLabel) {
+async function activatePanelVideo(panelState) {
   resetTrackedFaces(panelState);
   resizeFaceOverlay(panelState);
   panelState.videoStageEl.classList.add('hasVideo');
-  if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = statusLabel;
   await ensureFaceApiReady();
   await panelState.loadedVideoEl.play();
   startFaceDetectionLoop(panelState);
@@ -739,15 +1364,11 @@ function stopPanelMedia(panelState, { preserveUrl = false } = {}) {
   resetTrackedFaces(panelState);
   updatePanelStatus(panelState);
   updateCloudTargetFromPanels();
-  if (panelState.cameraToggleButtonEl) {
-    panelState.cameraToggleButtonEl.textContent = 'Start Camera';
-  }
 }
 
 async function startCameraPanel(panelState) {
   if (panelState.mediaStream) return;
   stopPanelMedia(panelState);
-  if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Requesting camera...';
   const mediaStream = await navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: 'user',
@@ -757,10 +1378,7 @@ async function startCameraPanel(panelState) {
   panelState.mediaStream = mediaStream;
   panelState.loadedVideoEl.srcObject = mediaStream;
   panelState.loadedVideoUrl = null;
-  if (panelState.cameraToggleButtonEl) {
-    panelState.cameraToggleButtonEl.textContent = 'Stop Camera';
-  }
-  await activatePanelVideo(panelState, 'Starting camera...');
+  await activatePanelVideo(panelState);
 }
 
 // ── VIDEO LOADER ────────────────────────────────────────────
@@ -771,7 +1389,6 @@ for (const panelState of panelStates) {
   if (!file) return;
 
   if (file.type && file.type !== 'video/mp4') {
-    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Please choose an MP4 file';
     panelState.videoFileInputEl.value = '';
     return;
   }
@@ -788,16 +1405,15 @@ for (const panelState of panelStates) {
   panelState.loadedVideoEl.defaultMuted = true;
 
   try {
-    await activatePanelVideo(panelState, `Loading ${file.name}...`);
+    await activatePanelVideo(panelState);
   } catch (error) {
     console.error(error);
-    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = `Loaded ${file.name}, playback blocked`;
   }
   });
   }
 
-  if (panelState.cameraToggleButtonEl) {
-    panelState.cameraToggleButtonEl.addEventListener('click', async () => {
+  const handleStageAction = async () => {
+    if (panelState.sourceType === 'camera') {
       if (panelState.mediaStream) {
         stopPanelMedia(panelState);
         return;
@@ -807,11 +1423,23 @@ for (const panelState of panelStates) {
         await startCameraPanel(panelState);
       } catch (error) {
         console.error(error);
-        if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Camera unavailable';
-        if (panelState.cameraToggleButtonEl) {
-          panelState.cameraToggleButtonEl.textContent = 'Start Camera';
-        }
       }
+      return;
+    }
+
+    if (panelState.videoFileInputEl) {
+      panelState.videoFileInputEl.click();
+    }
+  };
+
+  if (panelState.videoStageEl) {
+    panelState.videoStageEl.addEventListener('click', () => {
+      void handleStageAction();
+    });
+    panelState.videoStageEl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      void handleStageAction();
     });
   }
 
@@ -843,7 +1471,12 @@ window.addEventListener('resize', () => {
 // ── FACE API ────────────────────────────────────────────────
 async function ensureFaceApiReady() {
   if (faceApiReady) return;
+  if (!window.faceapi) {
+    updateFaceApiRail('face-api.js error', 'The local script is missing or failed to load.');
+    throw new Error('face-api.js is not available');
+  }
   if (!faceApiLoading) {
+    updateFaceApiRail('face-api.js ready', 'Loading face-api models...');
     for (const panelState of panelStates) {
       if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: loading detector';
     }
@@ -854,6 +1487,12 @@ async function ensureFaceApiReady() {
     ])
       .then(() => {
         faceApiReady = true;
+        updateFaceApiRail('face-api.js ready', 'Models loaded.');
+        window.setTimeout(hideFaceApiRail, 250);
+      })
+      .catch((error) => {
+        updateFaceApiRail('face-api.js error', 'Model download failed.');
+        throw error;
       });
   }
   await faceApiLoading;
@@ -877,7 +1516,6 @@ function resetTrackedFaces(panelState) {
   panelState.primarySeenAtMs = 0;
   clearKnownFaceSpatialState(panelState);
   if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: none';
-  if (panelState.faceSizeBarEl) panelState.faceSizeBarEl.textContent = 'Sizes: none';
   clearFaceOverlay(panelState);
 }
 
@@ -885,15 +1523,26 @@ function clearFaceOverlay(panelState) {
   panelState.faceOverlayCtx.clearRect(0, 0, panelState.faceOverlayEl.width, panelState.faceOverlayEl.height);
 }
 
-function toggleVideoPanel() {
-  for (const panelState of panelStates) {
-    panelState.panelEl.classList.toggle('isHidden');
+function toggleDebugPanels() {
+  if (videoPanelsEl) {
+    videoPanelsEl.classList.toggle('isVisible');
   }
+  if (cloudDebugPanelEl) {
+    cloudDebugPanelEl.classList.toggle('isVisible');
+  }
+  if (videoPanelsEl && videoPanelsEl.classList.contains('isVisible')) {
+    for (const panelState of panelStates) resizeFaceOverlay(panelState);
+  }
+}
+
+function toggleSunburst() {
+  sunburstEnabled = !sunburstEnabled;
+  forceCloudRedraw = true;
+  updateCloudDebug();
 }
 
 window.addEventListener('keydown', (event) => {
   if (event.defaultPrevented || event.repeat) return;
-  if (event.key !== 'd' && event.key !== 'D') return;
 
   const target = event.target;
   const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
@@ -901,8 +1550,16 @@ window.addEventListener('keydown', (event) => {
     return;
   }
 
-  event.preventDefault();
-  toggleVideoPanel();
+  if (event.key === 'd' || event.key === 'D') {
+    event.preventDefault();
+    toggleDebugPanels();
+    return;
+  }
+
+  if (event.key === 's' || event.key === 'S') {
+    event.preventDefault();
+    toggleSunburst();
+  }
 });
 
 function startFaceDetectionLoop(panelState) {
@@ -915,9 +1572,6 @@ function startFaceDetectionLoop(panelState) {
       panelState.detectLoopHandle = requestAnimationFrame(tick);
     }
   };
-  if (panelState.videoStatusEl) {
-    panelState.videoStatusEl.textContent = `Starting detection in ${(VIDEO_LOAD_DETECTION_DELAY_MS / 1000).toFixed(1)}s`;
-  }
   panelState.detectLoopStartTimeout = window.setTimeout(() => {
     panelState.detectLoopStartTimeout = 0;
     if (!panelState.loadedVideoEl.paused && !panelState.loadedVideoEl.ended) {
@@ -963,7 +1617,6 @@ async function detectFacesFrame(panelState) {
   } catch (error) {
     console.error(error);
     stopFaceDetectionLoop(panelState);
-    if (panelState.videoStatusEl) panelState.videoStatusEl.textContent = 'Face detection error';
   }
 }
 
@@ -997,15 +1650,7 @@ function updateFaceIdBar(panelState) {
 }
 
 function updateFaceSizeBar(panelState) {
-  if (!panelState.faceSizeBarEl) return;
-  if (!panelState.visibleFaces.length) {
-    panelState.faceSizeBarEl.textContent = `Sizes: none · scale ${panelState.videoScale.toFixed(2)}x`;
-    return;
-  }
-
-  panelState.faceSizeBarEl.textContent = `Sizes: ${panelState.visibleFaces
-    .map((face) => `${formatFaceLabel(face)} ${Math.round(getRenderedFaceMetrics(panelState, face.box).area)}`)
-    .join(' · ')} · scale ${panelState.videoScale.toFixed(2)}x`;
+  return;
 }
 
 function getLargestVisibleFaceAcrossPanels() {
@@ -1081,10 +1726,6 @@ function updateWinnerPulseState(winnerSnapshot, now) {
     pulsePendingWinnerKey = null;
     pulsePendingSinceMs = 0;
     pulseConfirmedWinnerSeenAtMs = now;
-    if (winnerKey !== pulseLastTriggeredWinnerKey) {
-      triggerSunPulse();
-      pulseLastTriggeredWinnerKey = winnerKey;
-    }
     return true;
   }
 
@@ -1093,26 +1734,65 @@ function updateWinnerPulseState(winnerSnapshot, now) {
 
 function updateCloudTargetFromPanels() {
   const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
-  if (!winnerSnapshot.face) {
+  const now = performance.now();
+  const anyFaceDetected = panelStates.some((panelState) => panelState.visibleFaces.length > 0);
+
+  if (anyFaceDetected && !sunPulseHasFaceLatch) {
+    sunPulseHasFaceLatch = true;
+  } else if (!anyFaceDetected && sunPulseHasFaceLatch) {
+    sunPulseHasFaceLatch = false;
+  }
+
+  if (sunPulseTransitionCommitted) {
+    if (!isCloudReadyForNewWinner()) {
+      return;
+    }
+
+    resetSunPulseCycle();
     resetWinnerPulseTracking();
+    sunPulseLevel = 0;
+    sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+    sunPulseMode = 'idle';
+    sunPulseHoverPhase = 0;
+    transitionFlashLevel = 0;
+    transitionFlashDirection = 0;
+    transitionFlashSpread = 0;
+  }
+
+  const confirmedWinnerStable = updateWinnerPulseState(winnerSnapshot, now);
+  const hasClearWinner = winnerSnapshot.face && isClearGlobalWinner(winnerSnapshot);
+  const currentWinnerKey = hasClearWinner ? getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face) : null;
+  const currentWinnerPerson = hasClearWinner ? getPersonForWinnerSnapshot(winnerSnapshot) : null;
+  const hasConfirmedCurrentWinner = Boolean(
+    confirmedWinnerStable &&
+    pulseConfirmedWinnerKey &&
+    currentWinnerKey &&
+    pulseConfirmedWinnerKey === currentWinnerKey
+  );
+
+  if (!sunPulseLockedWinnerKey && hasConfirmedCurrentWinner && currentWinnerPerson && shouldPlaySunPulseForPerson(currentWinnerPerson)) {
+    sunPulseLockedWinnerKey = currentWinnerKey;
+    sunPulseLockedWinnerPerson = currentWinnerPerson;
+  }
+
+  sunPulseLockedWinnerVisible = Boolean(
+    sunPulseLockedWinnerKey &&
+    pulseConfirmedWinnerKey &&
+    confirmedWinnerStable &&
+    pulseConfirmedWinnerKey === sunPulseLockedWinnerKey
+  );
+
+  if (sunPulseLockedWinnerVisible) {
+    if (sunPulseLevel < 1 && sunPulseMode !== 'advancing') {
+      startSunPulseAdvance();
+    }
+  } else if (!sunPulseTransitionCommitted && sunPulseLevel > 0) {
+    startSunPulseRecede();
+  }
+
+  if (!sunPulseLockedWinnerKey && !anyFaceDetected && (!activePerson || isCloudTransitionSettled())) {
     stopActivePersonShift();
-    return;
   }
-
-  const confirmedWinnerStable = updateWinnerPulseState(winnerSnapshot, performance.now());
-  const currentWinnerKey = getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face);
-  const canUseWinner = pulseConfirmedWinnerKey && currentWinnerKey === pulseConfirmedWinnerKey;
-
-  if (!canUseWinner && !confirmedWinnerStable) {
-    return;
-  }
-
-  const person = getPersonForWinnerSnapshot(winnerSnapshot);
-  if (!person) {
-    return;
-  }
-
-  setActivePerson(person);
 }
 
 function isGlobalWinningFace(panelState, face) {
@@ -1319,6 +1999,8 @@ function drawTrackedFaces(panelState) {
   clearFaceOverlay(panelState);
   if (!panelState.faceOverlayEl.width || !panelState.faceOverlayEl.height || !panelState.visibleFaces.length) return;
 
+  panelState.faceOverlayCtx.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
+  panelState.faceOverlayCtx.textBaseline = 'top';
   panelState.faceOverlayCtx.lineWidth = 2;
   for (const face of panelState.visibleFaces) {
     const metrics = getRenderedFaceMetrics(panelState, face.box);
@@ -1328,26 +2010,36 @@ function drawTrackedFaces(panelState) {
     const height = metrics.height;
     const isWinner = isGlobalWinningFace(panelState, face);
     const strokeColor = isWinner ? 'rgba(110, 255, 160, 0.98)' : 'rgba(187, 233, 255, 0.95)';
+    const faceLabel = `ID ${face.personId}`;
+    const labelPaddingX = 6;
+    const labelPaddingY = 4;
+    const labelHeight = 18;
+    const labelWidth = panelState.faceOverlayCtx.measureText(faceLabel).width + labelPaddingX * 2;
+    const labelX = x;
+    const labelY = Math.max(0, y - labelHeight - 4);
 
     panelState.faceOverlayCtx.strokeStyle = strokeColor;
     panelState.faceOverlayCtx.strokeRect(x, y, width, height);
+    panelState.faceOverlayCtx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+    panelState.faceOverlayCtx.fillRect(labelX, labelY, labelWidth, labelHeight);
+    panelState.faceOverlayCtx.strokeStyle = strokeColor;
+    panelState.faceOverlayCtx.strokeRect(labelX, labelY, labelWidth, labelHeight);
+    panelState.faceOverlayCtx.fillStyle = strokeColor;
+    panelState.faceOverlayCtx.fillText(faceLabel, labelX + labelPaddingX, labelY + labelPaddingY - 1);
   }
 }
 
 // ── INIT ─────────────────────────────────────────────────────
 function init() {
   registerPerson();
-  setActivePerson(people[0]);
+  stopActivePersonShift();
   updateCloudDebug();
 
   const cameraPanelState = panelStates.find((panelState) => panelState.sourceType === 'camera');
   if (cameraPanelState) {
     startCameraPanel(cameraPanelState).catch((error) => {
       console.error(error);
-      if (cameraPanelState.videoStatusEl) cameraPanelState.videoStatusEl.textContent = 'Camera unavailable';
-      if (cameraPanelState.cameraToggleButtonEl) {
-        cameraPanelState.cameraToggleButtonEl.textContent = 'Start Camera';
-      }
+      updatePanelStatus(cameraPanelState);
     });
   }
 
@@ -1355,10 +2047,14 @@ function init() {
   let lastRegen = performance.now();
   let needsDraw = true;
   function frame(now) {
+    stepCloudTransition();
     updateSunPulse(now);
     updateFps(now);
-    stepCloudTransition();
     updateCloudDebug();
+    if (forceCloudRedraw) {
+      needsDraw = true;
+      forceCloudRedraw = false;
+    }
     if (now - lastRegen >= regenMs) {
       const t0 = performance.now();
       generateCloud();
@@ -1366,14 +2062,16 @@ function init() {
       lastRegen = now;
       needsDraw = true;
     }
-    const pulseActive = sunPulseT >= 0;
-    if (needsDraw || pulseActive) {
+    const overlayActive = sunburstEnabled && getSunPulseIntensity() > 0.001;
+    const flashActive = sunburstEnabled && transitionFlashLevel > 0.001;
+    if (needsDraw || overlayActive || flashActive) {
       cctx.clearRect(0, 0, cloudCan.width, cloudCan.height);
       const scale = Math.max(cloudCan.width / CLOUD_W, cloudCan.height / CLOUD_H);
       const dw = CLOUD_W * scale, dh = CLOUD_H * scale;
       const dx = (cloudCan.width - dw) / 2, dy = (cloudCan.height - dh) / 2;
       cctx.drawImage(buf, BLEED, BLEED, CLOUD_W, CLOUD_H, dx, dy, dw, dh);
-      if (pulseActive) drawPulseOverlay(cctx, cloudCan.width, cloudCan.height);
+      if (overlayActive) drawPulseOverlay(cctx, cloudCan.width, cloudCan.height);
+      if (flashActive) drawTransitionFlashOverlay(cctx, cloudCan.width, cloudCan.height);
       needsDraw = false;
     }
     requestAnimationFrame(frame);
