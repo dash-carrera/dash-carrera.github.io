@@ -335,63 +335,43 @@
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.62);
   }
+  .debugTouchHotspot {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 104px;
+    height: 104px;
+    z-index: 30;
+    border: 0;
+    padding: 0;
+    margin: 0;
+    background: transparent;
+    appearance: none;
+    -webkit-appearance: none;
+    color: transparent;
+    cursor: default;
+    touch-action: manipulation;
+  }
+  body.iosSafariPerf .cloudDebugCard,
+  body.iosSafariPerf .videoPanels.isVisible .videoPanel,
+  body.iosSafariPerf .faceApiRail {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    background: rgba(9, 16, 24, 0.82);
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
   <canvas id="cloud"></canvas>
+  <button class="debugTouchHotspot" id="debugTouchHotspot" type="button" aria-label="Hidden debug toggle"></button>
   <div class="faceApiRail" aria-live="polite">
     <div class="faceApiRailLabel" id="faceApiStatus">face-api.js</div>
     <div class="faceApiRailDetail" id="faceApiDetail">Loading local script...</div>
   </div>
   <div class="videoPanels">
-    <div class="videoPanel" data-panel-index="0" data-source-type="file">
-      <div class="controlRow">
-        <div class="controlHeader">
-          <span class="controlLabel">ML Scale</span>
-          <span class="controlValue videoScaleValue">1.00x</span>
-        </div>
-        <input
-          class="sliderInput videoScaleSlider"
-          type="range"
-          min="0.50"
-          max="1.50"
-          step="0.01"
-          value="1.00"
-        />
-      </div>
-      <input id="videoFileInput0" class="videoFileInput" type="file" accept="video/mp4" />
-      <div class="videoStage" tabindex="0" role="button" aria-label="Load MP4">
-        <video class="loadedVideo" muted autoplay playsinline loop></video>
-        <canvas class="faceOverlay"></canvas>
-        <div class="faceIdBar">Persons: none</div>
-        <div class="videoStageAction">Load MP4</div>
-      </div>
-    </div>
-    <div class="videoPanel" data-panel-index="1" data-source-type="file">
-      <div class="controlRow">
-        <div class="controlHeader">
-          <span class="controlLabel">ML Scale</span>
-          <span class="controlValue videoScaleValue">1.00x</span>
-        </div>
-        <input
-          class="sliderInput videoScaleSlider"
-          type="range"
-          min="0.50"
-          max="1.50"
-          step="0.01"
-          value="1.00"
-        />
-      </div>
-      <input id="videoFileInput1" class="videoFileInput" type="file" accept="video/mp4" />
-      <div class="videoStage" tabindex="0" role="button" aria-label="Load MP4">
-        <video class="loadedVideo" muted autoplay playsinline loop></video>
-        <canvas class="faceOverlay"></canvas>
-        <div class="faceIdBar">Persons: none</div>
-        <div class="videoStageAction">Load MP4</div>
-      </div>
-    </div>
-    <div class="videoPanel" data-panel-index="2" data-source-type="camera">
+    <div class="videoPanel" data-panel-index="0" data-source-type="camera">
       <div class="controlRow">
         <div class="controlHeader">
           <span class="controlLabel">ML Scale</span>
@@ -424,7 +404,7 @@
       <div class="cloudDebugLabel" id="cloudDetectedLabel" style="padding: 8px 12px 0;">Detected none</div>
       <div class="cloudDebugLabel" id="cloudTransitionStatus" style="padding: 8px 12px 0;">State stable</div>
       <div class="cloudDebugLabel" id="cloudSunburstStatus" style="padding: 8px 12px 0;">Sunburst on</div>
-      <div class="cloudDebugLabel" id="cloudDebugHint" style="padding: 8px 12px 0;">Press d to toggle debug panels. Press s to toggle sunburst.</div>
+      <div class="cloudDebugLabel" id="cloudDebugHint" style="padding: 8px 12px 0;">Press d or triple-tap the top-right corner to toggle debug panels. Press s to toggle sunburst.</div>
       <table class="cloudDebugTable">
         <thead>
           <tr>
@@ -464,6 +444,17 @@ window.setFaceApiScriptStatus = function setFaceApiScriptStatus(status, detail) 
 </script>
 <script src="./face-api.min.js" onload="setFaceApiScriptStatus('ready', 'Local script loaded.')" onerror="setFaceApiScriptStatus('error', 'Unable to load ./face-api.min.js')"></script>
 <script>
+const USER_AGENT = navigator.userAgent || '';
+const IS_APPLE_TOUCH_DEVICE = /iPad|iPhone|iPod/.test(USER_AGENT)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const IS_SAFARI_BROWSER = /Safari/i.test(USER_AGENT)
+  && !/CriOS|Chrome|Chromium|EdgiOS|FxiOS/i.test(USER_AGENT);
+const USE_IPAD_SAFARI_PERF_PROFILE = IS_APPLE_TOUCH_DEVICE && IS_SAFARI_BROWSER;
+
+if (USE_IPAD_SAFARI_PERF_PROFILE) {
+  document.body.classList.add('iosSafariPerf');
+}
+
 // ── PERSON REGISTRY ──────────────────────────────────────────
 const people = [];
 let activePerson = null;
@@ -667,7 +658,26 @@ function lerpHsv(a,b,t){let dh=b[0]-a[0];if(dh>180)dh-=360;if(dh<-180)dh+=360;le
 
 let cloudCurrent={skyH:200,skyS:45,skyV:55,turbulence:1.5,noiseOffset:0.4,noiseCeiling:0.5};
 let cloudTarget={...cloudCurrent};
-let transitionSpeed=0.002, regenMs=300;
+const PERF_PROFILE = USE_IPAD_SAFARI_PERF_PROFILE
+  ? {
+      regenMs: 420,
+      cloudScale: 0.82,
+      targetStrokes: 3200,
+      maxStrokeAttempts: 32000,
+      detectorInputSize: 320,
+      detectorScoreThreshold: 0.5,
+      minDetectionIntervalMs: 120,
+    }
+  : {
+      regenMs: 300,
+      cloudScale: 1,
+      targetStrokes: 4800,
+      maxStrokeAttempts: 48000,
+      detectorInputSize: 416,
+      detectorScoreThreshold: 0.45,
+      minDetectionIntervalMs: 0,
+    };
+let transitionSpeed=0.002, regenMs=PERF_PROFILE.regenMs;
 const darkCutoff=0.62, edgeCutoff=0.92, EDGE_B=rgbToHsv(252,248,210);
 let simplex=OpenSimplex(Math.floor(Math.random()*999999));
 let timeOffset=0;
@@ -680,9 +690,11 @@ const cloudCan=document.getElementById('cloud'),cctx=cloudCan.getContext('2d');
 function resizeCloud(){cloudCan.width=window.innerWidth;cloudCan.height=window.innerHeight}
 resizeCloud();window.addEventListener('resize',resizeCloud);
 
-const CLOUD_W=1800,CLOUD_H=1360,BLEED=480;
-const BUF_W=CLOUD_W+BLEED*2,BUF_H=CLOUD_H+BLEED*2,BASE_RX=760;
-const CX=BUF_W/2,CY=BUF_H/2,VERTS=62,STEPS=30,TARGET=4800,MAX_ATT=48000;
+const CLOUD_W=Math.round(1800 * PERF_PROFILE.cloudScale);
+const CLOUD_H=Math.round(1360 * PERF_PROFILE.cloudScale);
+const BLEED=Math.round(480 * PERF_PROFILE.cloudScale);
+const BUF_W=CLOUD_W+BLEED*2,BUF_H=CLOUD_H+BLEED*2,BASE_RX=Math.round(760 * PERF_PROFILE.cloudScale);
+const CX=BUF_W/2,CY=BUF_H/2,VERTS=62,STEPS=30,TARGET=PERF_PROFILE.targetStrokes,MAX_ATT=PERF_PROFILE.maxStrokeAttempts;
 const buf=document.createElement('canvas');buf.width=BUF_W;buf.height=BUF_H;
 const bctx=buf.getContext('2d');
 const bgCan=document.createElement('canvas');bgCan.width=BUF_W;bgCan.height=BUF_H;
@@ -752,6 +764,8 @@ const cloudDebugBodyEl = document.getElementById('cloudDebugBody');
 let fpsFrames = 0, fpsLast = performance.now(), regenTime = 0;
 let sunburstEnabled = true;
 let forceCloudRedraw = false;
+let debugTouchTapCount = 0;
+let lastDebugTouchTapAtMs = 0;
 function updateFps(now) {
   if (!fpsEl) return;
   fpsFrames++;
@@ -829,6 +843,7 @@ function updateCloudDebug() {
 const videoPanelsEl = document.querySelector('.videoPanels');
 const cloudDebugPanelEl = document.querySelector('.cloudDebugPanel');
 const faceApiRailEl = document.querySelector('.faceApiRail');
+const debugTouchHotspotEl = document.getElementById('debugTouchHotspot');
 const faceApiStatusEl = document.getElementById('faceApiStatus');
 const faceApiDetailEl = document.getElementById('faceApiDetail');
 const videoPanelEls = Array.from(document.querySelectorAll('.videoPanel'));
@@ -870,6 +885,8 @@ const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.86;
 const FILE_MIN_DETECTION_SCORE = 0.52;
 const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.60;
 const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.68;
+const DEBUG_TOUCH_TOGGLE_TAP_COUNT = 3;
+const DEBUG_TOUCH_TOGGLE_MAX_GAP_MS = 550;
 const panelStates = videoPanelEls.map(createPanelState);
 
 if (cloudDebugBodyEl) {
@@ -927,6 +944,8 @@ function createPanelState(panelEl, index) {
     mediaStream: null,
     detectLoopHandle: 0,
     detectLoopStartTimeout: 0,
+    detectInFlight: false,
+    lastDetectStartedAtMs: 0,
     visibleFaces: [],
     knownFaces: [],
     pendingFaces: [],
@@ -1541,6 +1560,32 @@ function toggleSunburst() {
   updateCloudDebug();
 }
 
+function registerDebugTouchTap() {
+  const now = performance.now();
+  if (now - lastDebugTouchTapAtMs <= DEBUG_TOUCH_TOGGLE_MAX_GAP_MS) {
+    debugTouchTapCount += 1;
+  } else {
+    debugTouchTapCount = 1;
+  }
+  lastDebugTouchTapAtMs = now;
+
+  if (debugTouchTapCount >= DEBUG_TOUCH_TOGGLE_TAP_COUNT) {
+    debugTouchTapCount = 0;
+    toggleDebugPanels();
+  }
+}
+
+if (debugTouchHotspotEl) {
+  if (navigator.maxTouchPoints > 0 || 'ontouchstart' in window) {
+    debugTouchHotspotEl.addEventListener('touchend', (event) => {
+      event.preventDefault();
+      registerDebugTouchTap();
+    }, { passive: false });
+  } else {
+    debugTouchHotspotEl.addEventListener('click', registerDebugTouchTap);
+  }
+}
+
 window.addEventListener('keydown', (event) => {
   if (event.defaultPrevented || event.repeat) return;
 
@@ -1592,6 +1637,16 @@ function stopFaceDetectionLoop(panelState) {
 
 async function detectFacesFrame(panelState) {
   if (!faceApiReady || panelState.loadedVideoEl.readyState < 2) return;
+  const now = performance.now();
+  if (panelState.detectInFlight) return;
+  if (
+    PERF_PROFILE.minDetectionIntervalMs > 0
+    && now - panelState.lastDetectStartedAtMs < PERF_PROFILE.minDetectionIntervalMs
+  ) {
+    return;
+  }
+  panelState.lastDetectStartedAtMs = now;
+  panelState.detectInFlight = true;
   try {
     panelState.detectionFrameIndex += 1;
     const processCanvas = prepareProcessingFrame(panelState);
@@ -1600,8 +1655,8 @@ async function detectFacesFrame(panelState) {
       .detectAllFaces(
         processCanvas,
         new faceapi.TinyFaceDetectorOptions({
-          inputSize: 416,
-          scoreThreshold: 0.45,
+          inputSize: PERF_PROFILE.detectorInputSize,
+          scoreThreshold: PERF_PROFILE.detectorScoreThreshold,
         })
       )
       .withFaceLandmarks()
@@ -1617,6 +1672,8 @@ async function detectFacesFrame(panelState) {
   } catch (error) {
     console.error(error);
     stopFaceDetectionLoop(panelState);
+  } finally {
+    panelState.detectInFlight = false;
   }
 }
 
