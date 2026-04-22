@@ -749,6 +749,7 @@ const RECENT_PRIORITY_HISTORY = 3;
 const RECENT_SECONDARY_HISTORY = 20;
 const RECENT_GUARD_HISTORY = 100;
 const personNormHistory = [];
+let facemeshPendingGeneration = false;
 
 const EDGE_ANCHORS = [
   [0.0, 1.0, 0.8, 0.0, 0.2, 0.9],
@@ -814,10 +815,18 @@ function findMaximallyDifferent() {
   return bestPoint;
 }
 
-function registerPerson() {
+function registerPerson({ trackForFacemesh = true } = {}) {
   const norm = findMaximallyDifferent();
   personNormHistory.push(norm);
-  return addPersonFromNorm(norm);
+  const person = addPersonFromNorm(norm);
+  if (trackForFacemesh) {
+    facemeshPendingGeneration = true;
+    const cameraPanelState = getCameraPanelState();
+    if (cameraPanelState && (cameraPanelState.ml5FacemeshReady || cameraPanelState.ml5FacemeshLoading || cameraPanelState.ml5Predictions.length)) {
+      resetMl5AnalysisForPanel(cameraPanelState);
+    }
+  }
+  return person;
 }
 
 function encodeNorm(norm) {
@@ -1409,14 +1418,7 @@ function getCameraPanelState() {
 }
 
 function isWinnerSystemReady() {
-  const cameraPanelState = getCameraPanelState();
-  return Boolean(
-    faceApiReady &&
-    window.ml5ScriptStatus === 'ready' &&
-    cameraPanelState &&
-    cameraPanelState.ml5FacemeshReady &&
-    !cameraPanelState.ml5FacemeshError
-  );
+  return Boolean(faceApiReady);
 }
 
 function syncMl5FacemeshRail() {
@@ -1434,7 +1436,7 @@ function syncMl5FacemeshRail() {
   if (!shouldRunMl5Facemesh(cameraPanelState)) {
     updateMl5FacemeshRail(
       'ml5 facemesh gated',
-      `Waiting for cloud distance <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} before starting facemesh.`
+      `Waiting for a newly generated cloud and distance <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} before starting facemesh.`
     );
     refreshStatusRailVisibility();
     return;
@@ -1628,6 +1630,7 @@ function resetMl5AnalysisForPanel(panelState, { clearError = true, markRestart =
 
 function shouldRestartMl5Analysis(panelState, now = performance.now()) {
   if (!panelState) return false;
+  if (!shouldRunMl5Facemesh(panelState)) return false;
   if (!panelState.ml5FacemeshReady) return false;
   if (panelState.ml5FacemeshLoading) return false;
   if (!isVideoReadyForAnalysis(panelState.loadedVideoEl)) return false;
@@ -1734,6 +1737,7 @@ function expandBox(box, paddingRatio) {
 }
 
 function getBestPredictionMatch(panelState, face) {
+  if (!shouldRunMl5Facemesh(panelState)) return null;
   if (!panelState || !face || !panelState.ml5Predictions.length) return null;
 
   let bestMatch = null;
@@ -1802,16 +1806,13 @@ function getMl5InputVideoForPanel(panelState) {
 
 function shouldRunMl5Facemesh(panelState) {
   if (!panelState || panelState.sourceType !== 'camera') return true;
+  if (!facemeshPendingGeneration) return false;
   return getCloudTransitionDistance() <= FACEMESH_ENABLE_DISTANCE;
 }
 
 async function ensureMl5FacemeshReadyForPanel(panelState) {
   if (!panelState || panelState.ml5FacemeshReady) return panelState.ml5Facemesh;
   if (panelState.ml5FacemeshLoading) return panelState.ml5FacemeshLoading;
-  if (!shouldRunMl5Facemesh(panelState)) {
-    syncMl5FacemeshRail();
-    return Promise.resolve(null);
-  }
   if (!window.ml5) {
     const detail = window.ml5ScriptDetail || 'ml5 is not available';
     const error = new Error(detail);
@@ -1919,8 +1920,8 @@ function getWinnerAnalysisSnapshot() {
       status: 'Loading',
       winnerLabel: 'Winner none',
       sourceLabel: 'Source panel none',
-      detailLabel: 'Waiting for face-api, ml5, and live-panel facemesh to finish loading.',
-      bodyHtml: getAnalysisEmptyStateHtml('Waiting for all models to finish loading...'),
+      detailLabel: 'Waiting for face detection to finish loading.',
+      bodyHtml: getAnalysisEmptyStateHtml('Waiting for face detection to finish loading...'),
     };
   }
 
@@ -1959,8 +1960,8 @@ function getWinnerAnalysisSnapshot() {
         status: 'Waiting',
         winnerLabel,
         sourceLabel,
-        detailLabel: `Facemesh is paused until cloud distance is <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)}.`,
-        bodyHtml: getAnalysisEmptyStateHtml('Waiting to enable facemesh until the cloud is close to target.'),
+        detailLabel: `Facemesh is paused until a newly generated cloud is within ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} of target.`,
+        bodyHtml: getAnalysisEmptyStateHtml('Waiting to enable facemesh until the cloud is close enough after a new generation.'),
       };
     }
     return {
@@ -3372,7 +3373,7 @@ function drawTrackedFaces(panelState) {
 
 // ── INIT ─────────────────────────────────────────────────────
 function init() {
-  registerPerson();
+  registerPerson({ trackForFacemesh: false });
   stopActivePersonShift();
   updateCloudDebug();
   updateAnalysisDebugPanel();
