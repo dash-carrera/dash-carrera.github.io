@@ -965,7 +965,11 @@ const cloudCan=document.getElementById('cloud'),cctx=cloudCan.getContext('2d');
 function resizeCloud(){cloudCan.width=window.innerWidth;cloudCan.height=window.innerHeight}
 resizeCloud();window.addEventListener('resize',resizeCloud);
 
-const CLOUD_W=1800,CLOUD_H=1360,BLEED=480;
+const IS_MOBILE_SAFARI = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const CLOUD_W = 1800;
+const CLOUD_H = 1360;
+const BLEED = 480;
 const BUF_W=CLOUD_W+BLEED*2,BUF_H=CLOUD_H+BLEED*2,BASE_RX=760;
 const CX=BUF_W/2,CY=BUF_H/2,VERTS=62,STEPS=30,TARGET=4800,MAX_ATT=48000;
 const buf=document.createElement('canvas');buf.width=BUF_W;buf.height=BUF_H;
@@ -1163,7 +1167,7 @@ let debugCornerTapLastAtMs = 0;
 const ML5_VIDEO_NOT_READY_ERROR = 'The video element has not loaded data yet';
 const ML5_PREDICTION_STALE_MS = 1800;
 const ML5_RESTART_COOLDOWN_MS = 2500;
-const CAMERA_FACE_DETECTION_INTERVAL_MS = 120;
+const CAMERA_FACE_DETECTION_INTERVAL_MS = IS_MOBILE_SAFARI ? 180 : 120;
 const CAMERA_ML5_WARMUP_DELAY_MS = 180;
 const ANALYSIS_MATCH_OVERLAP_WEIGHT = 2.2;
 const ANALYSIS_MATCH_PAD_RATIO_FILE = 0.14;
@@ -1214,6 +1218,7 @@ const CAMERA_MAX_KNOWN_REUSE_DISTANCE = 0.72;
 const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.86;
 const CAMERA_PROCESSING_CROP_ASPECT = 16 / 9;
 const CAMERA_PROCESSING_ZOOM = 1.08;
+const CAMERA_DETECTION_INPUT_SIZE = IS_MOBILE_SAFARI ? 320 : 416;
 const FILE_MIN_DETECTION_SCORE = 0.52;
 const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.60;
 const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.68;
@@ -2813,7 +2818,7 @@ async function detectFacesFrame(panelState) {
       .detectAllFaces(
         processCanvas,
         new faceapi.TinyFaceDetectorOptions({
-          inputSize: 416,
+          inputSize: CAMERA_DETECTION_INPUT_SIZE,
           scoreThreshold: 0.45,
         })
       )
