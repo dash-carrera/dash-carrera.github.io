@@ -340,6 +340,22 @@
     line-height: 1.4;
     color: rgba(255, 255, 255, 0.62);
   }
+  .holdStillCue {
+    position: fixed;
+    left: 50%;
+    bottom: 11vh;
+    transform: translateX(-50%);
+    z-index: 21;
+    pointer-events: none;
+    color: rgba(255, 252, 246, 0.92);
+    font-size: clamp(14px, 1.8vw, 20px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-shadow: 0 0 18px rgba(255, 248, 232, 0.28);
+    opacity: 0;
+    transition: opacity 180ms ease;
+    white-space: nowrap;
+  }
   .analysisDebugPanel {
     display: none;
     position: fixed;
@@ -541,13 +557,12 @@
 <body>
 <div class="wrap">
   <canvas id="cloud"></canvas>
+  <div class="holdStillCue" id="holdStillCue" aria-hidden="true">Hold still...</div>
   <div class="faceApiRail" aria-live="polite">
     <div class="faceApiRailLabel" id="faceApiStatus">face-api.js</div>
     <div class="faceApiRailDetail" id="faceApiDetail">Loading local script...</div>
     <div class="faceApiRailLabel" id="ml5Status" style="margin-top: 8px;">ml5</div>
     <div class="faceApiRailDetail" id="ml5Detail">Loading local script...</div>
-    <div class="faceApiRailLabel" id="ml5FacemeshStatus" style="margin-top: 8px;">ml5 facemesh</div>
-    <div class="faceApiRailDetail" id="ml5FacemeshDetail">Waiting for live video panel...</div>
   </div>
   <div class="analysisDebugPanel" aria-live="polite">
     <div class="analysisDebugCard">
@@ -1085,7 +1100,7 @@ let strokes=[];
 function bake(s){const hw=s.len*.5,hh=s.thick*.5,fray=s.thick*.85,nO=rnd(0,1000),nS=0.22;const px=new Float32Array(VERTS),py=new Float32Array(VERTS);let vi=0;for(let i=0;i<=STEPS;i++){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=-hh*e+(n2(nO+t*nS*5,0)-.5)*2*fray*e;vi++}for(let i=STEPS;i>=0;i--){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=hh*e+(n2(nO+50+t*nS*5,0)-.5)*2*fray*e;vi++}s.px=px;s.py=py}
 function spawn(){const rx=840+BLEED*.5,ry=580+BLEED*.5;const x=rnd(CX-rx,CX+rx),y=rnd(CY-ry,CY+ry),d=sdf(x,y);let len,thick,angle,alpha;if(d<0){len=rnd(100,260);thick=rnd(28,76);angle=rnd(-.3,.3);alpha=rndI(140,230)}else if(d<.55){len=rnd(70,220);thick=rnd(20,60);angle=rnd(-.4,.4);alpha=rndI(110,210)}else if(d<.82){len=rnd(30,120);thick=rnd(10,36);angle=rnd(-Math.PI/2,Math.PI/2);alpha=rndI(50,140)}else return null;const s={x,y,len,thick,angle,alpha:clamp(alpha,1,255),col:dCol(d),depth:d};bake(s);return s}
 function generateCloud(){timeOffset+=0.005;drawBackground();bctx.drawImage(bgCan,0,0);strokes=[];let att=0;while(strokes.length<TARGET&&att<MAX_ATT){const s=spawn();if(s)strokes.push(s);att++}strokes.sort((a,b)=>b.depth-a.depth);for(const s of strokes){bctx.save();bctx.translate(s.x,s.y);bctx.rotate(s.angle);bctx.globalAlpha=s.alpha/255;bctx.fillStyle=`rgb(${s.col[0]},${s.col[1]},${s.col[2]})`;drawStrokePath(bctx,s.px,s.py);bctx.fill();bctx.restore()}bctx.globalAlpha=1}
-function stepCloudTransition(){updateCloudTargetWithMicrogestures();const sp=transitionSpeed;let dh=cloudTarget.skyH-cloudCurrent.skyH;if(dh>180)dh-=360;if(dh<-180)dh+=360;cloudCurrent.skyH+=dh*sp;if(cloudCurrent.skyH<0)cloudCurrent.skyH+=360;if(cloudCurrent.skyH>=360)cloudCurrent.skyH-=360;cloudCurrent.skyS=lerp(cloudCurrent.skyS,cloudTarget.skyS,sp);cloudCurrent.skyV=lerp(cloudCurrent.skyV,cloudTarget.skyV,sp);cloudCurrent.turbulence=lerp(cloudCurrent.turbulence,cloudTarget.turbulence,sp);cloudCurrent.noiseOffset=lerp(cloudCurrent.noiseOffset,cloudTarget.noiseOffset,sp);cloudCurrent.noiseCeiling=lerp(cloudCurrent.noiseCeiling,cloudTarget.noiseCeiling,sp)}
+function stepCloudTransition(){updateCloudTargetWithMicrogestures();const cameraPanelState=getCameraPanelState();if(cameraPanelState){if(shouldRunMl5Facemesh(cameraPanelState)){if(!cameraPanelState.ml5FacemeshReady&&!cameraPanelState.ml5FacemeshLoading&&!cameraPanelState.ml5FacemeshError&&cameraPanelState.mediaStream){void ensureMl5FacemeshReadyForPanel(cameraPanelState)}}else if(cameraPanelState.ml5FacemeshReady||cameraPanelState.ml5FacemeshLoading||cameraPanelState.ml5Predictions.length){resetMl5AnalysisForPanel(cameraPanelState)}syncMl5FacemeshRail()}const sp=transitionSpeed;let dh=cloudTarget.skyH-cloudCurrent.skyH;if(dh>180)dh-=360;if(dh<-180)dh+=360;cloudCurrent.skyH+=dh*sp;if(cloudCurrent.skyH<0)cloudCurrent.skyH+=360;if(cloudCurrent.skyH>=360)cloudCurrent.skyH-=360;cloudCurrent.skyS=lerp(cloudCurrent.skyS,cloudTarget.skyS,sp);cloudCurrent.skyV=lerp(cloudCurrent.skyV,cloudTarget.skyV,sp);cloudCurrent.turbulence=lerp(cloudCurrent.turbulence,cloudTarget.turbulence,sp);cloudCurrent.noiseOffset=lerp(cloudCurrent.noiseOffset,cloudTarget.noiseOffset,sp);cloudCurrent.noiseCeiling=lerp(cloudCurrent.noiseCeiling,cloudTarget.noiseCeiling,sp)}
 
 function dist6(a, b) { let s = 0; for (let i = 0; i < 6; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s); }
 
@@ -1193,11 +1208,19 @@ function updateCloudDebug() {
   updateAnalysisDebugPanel();
 }
 
+function updateHoldStillCue() {
+  if (!holdStillCueEl) return;
+  const pulse = sunburstEnabled ? getSunPulseIntensity() : 0;
+  const visiblePulse = clamp((pulse - 0.18) / 0.42, 0, 1);
+  holdStillCueEl.style.opacity = visiblePulse > 0 ? (visiblePulse * 0.92).toFixed(3) : '0';
+}
+
 // ── DEBUG UI ─────────────────────────────────────────────────
 const videoPanelsEl = document.querySelector('.videoPanels');
 const cloudDebugPanelEl = document.querySelector('.cloudDebugPanel');
 const analysisDebugPanelEl = document.querySelector('.analysisDebugPanel');
 const faceApiRailEl = document.querySelector('.faceApiRail');
+const holdStillCueEl = document.getElementById('holdStillCue');
 const faceApiStatusEl = document.getElementById('faceApiStatus');
 const faceApiDetailEl = document.getElementById('faceApiDetail');
 const ml5StatusEl = document.getElementById('ml5Status');
@@ -1277,6 +1300,7 @@ const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.86;
 const CAMERA_PROCESSING_CROP_ASPECT = 16 / 9;
 const CAMERA_PROCESSING_ZOOM = 1.08;
 const CAMERA_DETECTION_INPUT_SIZE = IS_MOBILE_SAFARI ? 320 : 416;
+const FACEMESH_ENABLE_DISTANCE = 0.5;
 const FILE_MIN_DETECTION_SCORE = 0.52;
 const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.60;
 const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.68;
@@ -1336,16 +1360,13 @@ function updateMl5FacemeshRail(statusText, detailText) {
 
 function refreshStatusRailVisibility() {
   if (!faceApiRailEl) return;
-  const cameraPanelState = getCameraPanelState();
-  const allModelsReady = Boolean(
+  const coreScriptsReady = Boolean(
     faceApiReady &&
     window.ml5ScriptStatus === 'ready' &&
-    cameraPanelState &&
-    cameraPanelState.ml5FacemeshReady &&
-    !cameraPanelState.ml5FacemeshError
+    window.faceApiScriptStatus === 'ready'
   );
 
-  if (allModelsReady) {
+  if (coreScriptsReady) {
     hideFaceApiRail();
     return;
   }
@@ -1407,6 +1428,14 @@ function syncMl5FacemeshRail() {
   }
   if (window.ml5ScriptStatus === 'error') {
     updateMl5FacemeshRail('ml5 facemesh blocked', window.ml5ScriptDetail || 'ml5 script is unavailable.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (!shouldRunMl5Facemesh(cameraPanelState)) {
+    updateMl5FacemeshRail(
+      'ml5 facemesh gated',
+      `Waiting for cloud distance <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} before starting facemesh.`
+    );
     refreshStatusRailVisibility();
     return;
   }
@@ -1771,9 +1800,18 @@ function getMl5InputVideoForPanel(panelState) {
   return panelState.loadedVideoEl;
 }
 
+function shouldRunMl5Facemesh(panelState) {
+  if (!panelState || panelState.sourceType !== 'camera') return true;
+  return getCloudTransitionDistance() <= FACEMESH_ENABLE_DISTANCE;
+}
+
 async function ensureMl5FacemeshReadyForPanel(panelState) {
   if (!panelState || panelState.ml5FacemeshReady) return panelState.ml5Facemesh;
   if (panelState.ml5FacemeshLoading) return panelState.ml5FacemeshLoading;
+  if (!shouldRunMl5Facemesh(panelState)) {
+    syncMl5FacemeshRail();
+    return Promise.resolve(null);
+  }
   if (!window.ml5) {
     const detail = window.ml5ScriptDetail || 'ml5 is not available';
     const error = new Error(detail);
@@ -1914,7 +1952,17 @@ function getWinnerAnalysisSnapshot() {
   }
 
   if (!panelState.ml5FacemeshReady && !panelState.ml5FacemeshError) {
-    void ensureMl5FacemeshReadyForPanel(panelState);
+    if (shouldRunMl5Facemesh(panelState)) {
+      void ensureMl5FacemeshReadyForPanel(panelState);
+    } else {
+      return {
+        status: 'Waiting',
+        winnerLabel,
+        sourceLabel,
+        detailLabel: `Facemesh is paused until cloud distance is <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)}.`,
+        bodyHtml: getAnalysisEmptyStateHtml('Waiting to enable facemesh until the cloud is close to target.'),
+      };
+    }
     return {
       status: 'Loading',
       winnerLabel,
@@ -2528,7 +2576,11 @@ async function activatePanelVideo(panelState) {
     await ml5InputVideoEl.play();
     await waitForVideoReady(ml5InputVideoEl);
     await new Promise((resolve) => window.setTimeout(resolve, CAMERA_ML5_WARMUP_DELAY_MS));
-    void ensureMl5FacemeshReadyForPanel(panelState);
+    if (shouldRunMl5Facemesh(panelState)) {
+      void ensureMl5FacemeshReadyForPanel(panelState);
+    } else {
+      syncMl5FacemeshRail();
+    }
   }
   startFaceDetectionLoop(panelState);
   updatePanelStatus(panelState);
@@ -3342,6 +3394,7 @@ function init() {
   function frame(now) {
     stepCloudTransition();
     updateSunPulse(now);
+    updateHoldStillCue();
     updateFps(now);
     updateCloudDebug();
     if (forceCloudRedraw) {
