@@ -1090,17 +1090,34 @@ let cloudDisplayBleed = 0;
 let cloudDisplayW = 0;
 let cloudDisplayH = 0;
 let cloudDisplaySource = 'empty';
+let cloudDisplayProfileScale = 1;
 
 function hasCloudDisplay() {
   return Boolean(cloudDisplayCan && cloudDisplayW > 0 && cloudDisplayH > 0);
 }
 
-function setCloudDisplay(canvas, bleed, width, height, source = 'working') {
+function getCloudDisplaySourceRect() {
+  if (!hasCloudDisplay()) return null;
+  const profileScale = Math.max(0.0001, cloudDisplayProfileScale || 1);
+  const desiredW = Math.min(cloudDisplayCan.width, Math.round(cloudDisplayW / profileScale));
+  const desiredH = Math.min(cloudDisplayCan.height, Math.round(cloudDisplayH / profileScale));
+  const sourceX = Math.max(0, Math.round((cloudDisplayCan.width - desiredW) * 0.5));
+  const sourceY = Math.max(0, Math.round((cloudDisplayCan.height - desiredH) * 0.5));
+  return {
+    x: sourceX,
+    y: sourceY,
+    width: desiredW,
+    height: desiredH,
+  };
+}
+
+function setCloudDisplay(canvas, bleed, width, height, source = 'working', profileScale = currentCloudScale) {
   cloudDisplayCan = canvas;
   cloudDisplayBleed = bleed;
   cloudDisplayW = width;
   cloudDisplayH = height;
   cloudDisplaySource = source;
+  cloudDisplayProfileScale = profileScale;
 }
 
 function preserveCurrentCloudDisplay() {
@@ -1109,7 +1126,7 @@ function preserveCurrentCloudDisplay() {
   cloudFrameHoldCan.height = cloudDisplayCan.height;
   cloudFrameHoldCtx.clearRect(0, 0, cloudFrameHoldCan.width, cloudFrameHoldCan.height);
   cloudFrameHoldCtx.drawImage(cloudDisplayCan, 0, 0);
-  setCloudDisplay(cloudFrameHoldCan, cloudDisplayBleed, cloudDisplayW, cloudDisplayH, 'held');
+  setCloudDisplay(cloudFrameHoldCan, cloudDisplayBleed, cloudDisplayW, cloudDisplayH, 'held', cloudDisplayProfileScale);
 }
 
 function rebuildCloudBuffers() {
@@ -1272,7 +1289,7 @@ function dCol(d){const dv=-0.6*Math.max(1,cloudCurrent.turbulence),ev=0.80;let t
 let strokes=[];
 function bake(s){const hw=s.len*.5,hh=s.thick*.5,fray=s.thick*.85,nO=rnd(0,1000),nS=0.22;const px=new Float32Array(VERTS),py=new Float32Array(VERTS);let vi=0;for(let i=0;i<=STEPS;i++){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=-hh*e+(n2(nO+t*nS*5,0)-.5)*2*fray*e;vi++}for(let i=STEPS;i>=0;i--){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=hh*e+(n2(nO+50+t*nS*5,0)-.5)*2*fray*e;vi++}s.px=px;s.py=py}
 function spawn(){const rx=840+BLEED*.5,ry=580+BLEED*.5;const x=rnd(CX-rx,CX+rx),y=rnd(CY-ry,CY+ry),d=sdf(x,y);let len,thick,angle,alpha;if(d<0){len=rnd(100,260);thick=rnd(28,76);angle=rnd(-.3,.3);alpha=rndI(140,230)}else if(d<.55){len=rnd(70,220);thick=rnd(20,60);angle=rnd(-.4,.4);alpha=rndI(110,210)}else if(d<.82){len=rnd(30,120);thick=rnd(10,36);angle=rnd(-Math.PI/2,Math.PI/2);alpha=rndI(50,140)}else return null;const s={x,y,len,thick,angle,alpha:clamp(alpha,1,255),col:dCol(d),depth:d};bake(s);return s}
-function generateCloud(){timeOffset+=0.005;drawBackground();bctx.drawImage(bgCan,0,0);strokes=[];let att=0;while(strokes.length<TARGET&&att<MAX_ATT){const s=spawn();if(s)strokes.push(s);att++}strokes.sort((a,b)=>b.depth-a.depth);for(const s of strokes){bctx.save();bctx.translate(s.x,s.y);bctx.rotate(s.angle);bctx.globalAlpha=s.alpha/255;bctx.fillStyle=`rgb(${s.col[0]},${s.col[1]},${s.col[2]})`;drawStrokePath(bctx,s.px,s.py);bctx.fill();bctx.restore()}bctx.globalAlpha=1;setCloudDisplay(buf,BLEED,CLOUD_W,CLOUD_H,'working')}
+function generateCloud(){timeOffset+=0.005;drawBackground();bctx.drawImage(bgCan,0,0);strokes=[];let att=0;while(strokes.length<TARGET&&att<MAX_ATT){const s=spawn();if(s)strokes.push(s);att++}strokes.sort((a,b)=>b.depth-a.depth);for(const s of strokes){bctx.save();bctx.translate(s.x,s.y);bctx.rotate(s.angle);bctx.globalAlpha=s.alpha/255;bctx.fillStyle=`rgb(${s.col[0]},${s.col[1]},${s.col[2]})`;drawStrokePath(bctx,s.px,s.py);bctx.fill();bctx.restore()}bctx.globalAlpha=1;setCloudDisplay(buf,BLEED,CLOUD_W,CLOUD_H,'working',currentCloudScale)}
 function stepCloudTransition(){updateCloudTargetWithMicrogestures();if(facemeshPendingGeneration&&getCloudTransitionDistance()>FACEMESH_ENABLE_DISTANCE){facemeshThresholdWasExceededForGeneration=true}const cameraPanelState=getCameraPanelState();if(cameraPanelState){maybeFallbackMl5Input(cameraPanelState);if(shouldRunMl5Facemesh(cameraPanelState)){if(!cameraPanelState.ml5FacemeshReady&&!cameraPanelState.ml5FacemeshLoading&&!cameraPanelState.ml5FacemeshError&&cameraPanelState.mediaStream){void ensureMl5FacemeshReadyForPanel(cameraPanelState)}}else if(cameraPanelState.ml5FacemeshReady||cameraPanelState.ml5FacemeshLoading||cameraPanelState.ml5Predictions.length){resetMl5AnalysisForPanel(cameraPanelState)}syncMl5FacemeshRail()}const sp=transitionSpeed;let dh=cloudTarget.skyH-cloudCurrent.skyH;if(dh>180)dh-=360;if(dh<-180)dh+=360;cloudCurrent.skyH+=dh*sp;if(cloudCurrent.skyH<0)cloudCurrent.skyH+=360;if(cloudCurrent.skyH>=360)cloudCurrent.skyH-=360;cloudCurrent.skyS=lerp(cloudCurrent.skyS,cloudTarget.skyS,sp);cloudCurrent.skyV=lerp(cloudCurrent.skyV,cloudTarget.skyV,sp);cloudCurrent.turbulence=lerp(cloudCurrent.turbulence,cloudTarget.turbulence,sp);cloudCurrent.noiseOffset=lerp(cloudCurrent.noiseOffset,cloudTarget.noiseOffset,sp);cloudCurrent.noiseCeiling=lerp(cloudCurrent.noiseCeiling,cloudTarget.noiseCeiling,sp)}
 
 function dist6(a, b) { let s = 0; for (let i = 0; i < 6; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s); }
@@ -1549,6 +1566,23 @@ function updateMl5Rail(statusText, detailText) {
 function updateMl5FacemeshRail(statusText, detailText) {
   if (ml5FacemeshStatusEl) ml5FacemeshStatusEl.textContent = statusText;
   if (ml5FacemeshDetailEl) ml5FacemeshDetailEl.textContent = detailText;
+}
+
+function updateStartupRailStatus({
+  faceApiDetail,
+  ml5Detail,
+  ml5FacemeshDetail,
+} = {}) {
+  if (typeof faceApiDetail === 'string') {
+    updateFaceApiRail('face-api.js ready', faceApiDetail);
+  }
+  if (typeof ml5Detail === 'string') {
+    updateMl5Rail('ml5 ready', ml5Detail);
+  }
+  if (typeof ml5FacemeshDetail === 'string') {
+    updateMl5FacemeshRail('ml5 facemesh loading', ml5FacemeshDetail);
+  }
+  refreshStatusRailVisibility();
 }
 
 function refreshStatusRailVisibility() {
@@ -2852,11 +2886,35 @@ async function activatePanelVideo(panelState) {
   resetTrackedFaces(panelState);
   resizeFaceOverlay(panelState);
   panelState.videoStageEl.classList.add('hasVideo');
+  if (panelState.sourceType === 'camera') {
+    updateStartupRailStatus({
+      faceApiDetail: 'Camera granted. Loading face models...',
+      ml5Detail: 'Camera granted. Preparing ml5...',
+      ml5FacemeshDetail: 'Camera granted. First load on iPad may pause briefly.',
+    });
+  }
   await ensureFaceApiReady();
+  if (panelState.sourceType === 'camera') {
+    updateStartupRailStatus({
+      faceApiDetail: 'Face models loaded. Warming up live video...',
+      ml5Detail: 'ml5 ready. Waiting for live video...',
+      ml5FacemeshDetail: 'Warming up live video before facemesh starts.',
+    });
+  }
   await panelState.loadedVideoEl.play();
   if (panelState.sourceType === 'camera') {
     panelState.ml5SourceMode = panelState.ml5ForceClonedVideo ? 'cloned-video' : 'direct-video';
+    updateStartupRailStatus({
+      faceApiDetail: 'Live video starting...',
+      ml5Detail: `ml5 ready. Using ${panelState.ml5SourceMode}.`,
+      ml5FacemeshDetail: 'Waiting for live video frames...',
+    });
     await waitForVideoReady(panelState.loadedVideoEl);
+    updateStartupRailStatus({
+      faceApiDetail: 'Live video ready.',
+      ml5Detail: `ml5 ready. Using ${panelState.ml5SourceMode}.`,
+      ml5FacemeshDetail: 'Starting facemesh. The first pass may pause briefly.',
+    });
     await new Promise((resolve) => window.setTimeout(resolve, CAMERA_ML5_WARMUP_DELAY_MS));
     if (shouldRunMl5Facemesh(panelState)) {
       void ensureMl5FacemeshReadyForPanel(panelState);
@@ -2903,6 +2961,11 @@ function stopPanelMedia(panelState, { preserveUrl = false } = {}) {
 async function startCameraPanel(panelState) {
   if (panelState.mediaStream) return;
   stopPanelMedia(panelState);
+  updateStartupRailStatus({
+    faceApiDetail: 'Requesting camera access...',
+    ml5Detail: 'Waiting for camera permission...',
+    ml5FacemeshDetail: 'Waiting for camera permission...',
+  });
   const mediaStream = await navigator.mediaDevices.getUserMedia({
     video: {
       facingMode: { ideal: 'user' },
@@ -2918,6 +2981,11 @@ async function startCameraPanel(panelState) {
   panelState.loadedVideoEl.srcObject = mediaStream;
   panelState.ml5SourceMode = panelState.ml5ForceClonedVideo ? 'cloned-video' : 'direct-video';
   panelState.loadedVideoUrl = null;
+  updateStartupRailStatus({
+    faceApiDetail: 'Camera granted. Preparing startup...',
+    ml5Detail: 'Camera granted. Preparing startup...',
+    ml5FacemeshDetail: 'Camera granted. Loading may pause briefly on first run.',
+  });
   await activatePanelVideo(panelState);
 }
 
@@ -3688,11 +3756,16 @@ function init() {
     const overlayActive = sunburstEnabled && getSunPulseIntensity() > 0.001;
     const flashActive = sunburstEnabled && transitionFlashLevel > 0.001;
     if ((needsDraw || overlayActive || flashActive) && hasCloudDisplay()) {
+      const sourceRect = getCloudDisplaySourceRect();
+      if (!sourceRect) {
+        requestAnimationFrame(frame);
+        return;
+      }
       cctx.clearRect(0, 0, cloudCan.width, cloudCan.height);
-      const scale = Math.max(cloudCan.width / cloudDisplayW, cloudCan.height / cloudDisplayH);
-      const dw = cloudDisplayW * scale, dh = cloudDisplayH * scale;
+      const scale = Math.max(cloudCan.width / sourceRect.width, cloudCan.height / sourceRect.height);
+      const dw = sourceRect.width * scale, dh = sourceRect.height * scale;
       const dx = (cloudCan.width - dw) / 2, dy = (cloudCan.height - dh) / 2;
-      cctx.drawImage(cloudDisplayCan, cloudDisplayBleed, cloudDisplayBleed, cloudDisplayW, cloudDisplayH, dx, dy, dw, dh);
+      cctx.drawImage(cloudDisplayCan, sourceRect.x, sourceRect.y, sourceRect.width, sourceRect.height, dx, dy, dw, dh);
       if (overlayActive) drawPulseOverlay(cctx, cloudCan.width, cloudCan.height);
       if (flashActive) drawTransitionFlashOverlay(cctx, cloudCan.width, cloudCan.height);
       needsDraw = false;
