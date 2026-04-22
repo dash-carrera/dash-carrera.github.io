@@ -730,8 +730,10 @@ function normalizedToCloud(norm) {
 }
 
 // ── CYCLING POISSON ──────────────────────────────────────────
-const BATCH_SIZE = 30;
-const batchNorms = [];
+const RECENT_PRIORITY_HISTORY = 3;
+const RECENT_SECONDARY_HISTORY = 20;
+const RECENT_GUARD_HISTORY = 100;
+const personNormHistory = [];
 
 const EDGE_ANCHORS = [
   [0.0, 1.0, 0.8, 0.0, 0.2, 0.9],
@@ -748,24 +750,58 @@ function randomCandidate() {
   });
 }
 
+function getMinDistanceToSet(candidate, norms) {
+  if (!norms.length) return Infinity;
+  let minDistance = Infinity;
+  for (const norm of norms) {
+    const distance = dist6(candidate, norm);
+    if (distance < minDistance) minDistance = distance;
+  }
+  return minDistance;
+}
+
+function isCandidateBetter(candidateScore, bestScore) {
+  if (!bestScore) return true;
+  if (candidateScore.primaryMinDistance !== bestScore.primaryMinDistance) {
+    return candidateScore.primaryMinDistance > bestScore.primaryMinDistance;
+  }
+  if (candidateScore.secondaryMinDistance !== bestScore.secondaryMinDistance) {
+    return candidateScore.secondaryMinDistance > bestScore.secondaryMinDistance;
+  }
+  if (candidateScore.guardMinDistance !== bestScore.guardMinDistance) {
+    return candidateScore.guardMinDistance > bestScore.guardMinDistance;
+  }
+  return candidateScore.fullHistoryMinDistance > bestScore.fullHistoryMinDistance;
+}
+
 function findMaximallyDifferent() {
-  if (batchNorms.length === 0) {
+  if (personNormHistory.length === 0) {
     return EDGE_ANCHORS[Math.floor(Math.random() * EDGE_ANCHORS.length)].slice();
   }
-  let bestPoint = null, bestMinDist = -1;
+  const primaryHistory = personNormHistory.slice(-RECENT_PRIORITY_HISTORY);
+  const secondaryHistory = personNormHistory.slice(-RECENT_SECONDARY_HISTORY);
+  const guardHistory = personNormHistory.slice(-RECENT_GUARD_HISTORY);
+  let bestPoint = null;
+  let bestScore = null;
   for (let c = 0; c < 5000; c++) {
     const cand = randomCandidate();
-    let minD = Infinity;
-    for (const ex of batchNorms) { const d = dist6(cand, ex); if (d < minD) minD = d; }
-    if (minD > bestMinDist) { bestMinDist = minD; bestPoint = cand; }
+    const candidateScore = {
+      primaryMinDistance: getMinDistanceToSet(cand, primaryHistory),
+      secondaryMinDistance: getMinDistanceToSet(cand, secondaryHistory),
+      guardMinDistance: getMinDistanceToSet(cand, guardHistory),
+      fullHistoryMinDistance: getMinDistanceToSet(cand, personNormHistory),
+    };
+    if (isCandidateBetter(candidateScore, bestScore)) {
+      bestScore = candidateScore;
+      bestPoint = cand;
+    }
   }
   return bestPoint;
 }
 
 function registerPerson() {
-  if (batchNorms.length >= BATCH_SIZE) batchNorms.length = 0;
   const norm = findMaximallyDifferent();
-  batchNorms.push(norm);
+  personNormHistory.push(norm);
   return addPersonFromNorm(norm);
 }
 
@@ -993,10 +1029,11 @@ function createGlowTexture(size, stops) {
 
 const pulseGlowTexture = createGlowTexture(768, [
   [0, 'rgba(255,250,235,0)'],
-  [0.28, 'rgba(255,246,225,0.04)'],
-  [0.52, 'rgba(255,248,232,0.16)'],
-  [0.72, 'rgba(255,252,244,0.46)'],
-  [0.88, 'rgba(255,255,255,0.88)'],
+  [0.18, 'rgba(255,244,218,0.05)'],
+  [0.38, 'rgba(255,245,220,0.16)'],
+  [0.60, 'rgba(255,248,230,0.34)'],
+  [0.80, 'rgba(255,252,244,0.72)'],
+  [0.93, 'rgba(255,255,255,0.96)'],
   [1, 'rgba(255,255,255,1)'],
 ]);
 
@@ -1021,11 +1058,13 @@ function drawPulseOverlay(ctx, canW, canH) {
   const pulse = getSunPulseIntensity();
   if (pulse <= 0) return;
   const easedPulse = Math.pow(pulse, 0.68);
-  const alpha = easedPulse * 0.92;
+  const alpha = easedPulse * 1.35;
   const cx = canW * 0.5;
   const cy = canH * 0.5;
-  const size = Math.sqrt(canW * canW + canH * canH) * 2;
-  drawCenteredGlow(ctx, pulseGlowTexture, cx, cy, size, alpha);
+  const diagonal = Math.sqrt(canW * canW + canH * canH);
+  drawCenteredGlow(ctx, pulseGlowTexture, cx, cy, diagonal * 3.15, alpha * 0.9);
+  drawCenteredGlow(ctx, pulseGlowTexture, cx, cy, diagonal * 2.05, alpha * 1.05);
+  drawCenteredGlow(ctx, pulseGlowTexture, cx, cy, diagonal * 1.15, alpha * 0.8);
 }
 
 function drawTransitionFlashOverlay(ctx, canW, canH) {
