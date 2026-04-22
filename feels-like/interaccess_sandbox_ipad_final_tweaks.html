@@ -1,0 +1,3781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>microgesture_analysis</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; min-height: 100vh; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow: hidden; }
+  .wrap { position: relative; width: 100vw; height: 100vh; }
+  canvas#cloud { display: block; width: 100%; height: 100%; }
+  .videoPanels {
+    position: absolute;
+    top: -9999px;
+    left: -9999px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 1px;
+    min-width: 0;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+  .videoPanels.isVisible {
+    display: flex;
+    flex-direction: column;
+    position: fixed;
+    top: auto;
+    left: auto;
+    right: 18px;
+    bottom: 18px;
+    gap: 8px;
+    width: min(23vw, 236px);
+    min-width: 196px;
+    height: auto;
+    max-height: calc(100vh - 36px);
+    overflow-x: visible;
+    overflow-y: auto;
+    opacity: 1;
+    pointer-events: auto;
+    z-index: 18;
+  }
+  .videoPanel {
+    width: 100%;
+    height: auto;
+  }
+  .cloudDebugPanel {
+    display: none;
+    position: fixed;
+    left: 18px;
+    bottom: 18px;
+    width: min(23.625vw, 236px);
+    min-width: 180px;
+    overflow: visible;
+    opacity: 1;
+    pointer-events: none;
+    z-index: 50;
+    transform-origin: left bottom;
+  }
+  .cloudDebugPanel.isVisible {
+    display: block;
+    pointer-events: auto;
+    transform: scale(1.25);
+  }
+  .cloudDebugCard {
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .cloudDebugHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 7px;
+    padding: 6px 7px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .cloudDebugTitle {
+    font-size: 6px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .cloudDebugLabel {
+    font-size: 6px;
+    color: rgba(255, 255, 255, 0.64);
+  }
+  .cloudDebugTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 7px;
+  }
+  .cloudDebugTable th,
+  .cloudDebugTable td {
+    padding: 4px 7px;
+    text-align: right;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    white-space: nowrap;
+  }
+  .cloudDebugTable th:first-child,
+  .cloudDebugTable td:first-child {
+    text-align: left;
+  }
+  .cloudDebugTable thead th {
+    font-size: 6px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .cloudDebugTable tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .cloudCurrentControl {
+    display: flex;
+    justify-content: flex-end;
+  }
+  .cloudCurrentInput {
+    width: 52px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.92);
+    font: inherit;
+    font-size: 7px;
+    text-align: right;
+    padding: 2px 4px;
+    appearance: textfield;
+  }
+  .cloudCurrentInput:hover,
+  .cloudCurrentInput:focus {
+    background: rgba(255, 255, 255, 0.14);
+    outline: none;
+  }
+  .cloudCurrentInput::-webkit-outer-spin-button,
+  .cloudCurrentInput::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  @media (max-width: 1100px) {
+    .videoPanels.isVisible {
+      width: min(24vw, 228px);
+      min-width: 188px;
+    }
+  }
+  @media (max-width: 800px) {
+    .cloudDebugPanel.isVisible {
+      left: 12px;
+      right: auto;
+      bottom: 12px;
+      width: auto;
+      min-width: 0;
+      transform: scale(0.98);
+    }
+    .videoPanels.isVisible {
+      right: 12px;
+      bottom: 12px;
+      width: min(38vw, 232px);
+      min-width: 180px;
+      height: auto;
+      max-height: calc(100vh - 24px);
+    }
+  }
+  .videoPanels.isVisible .videoPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 9px;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 7px;
+    overflow: hidden;
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+  }
+  .videoFileInput {
+    display: none;
+  }
+  .controlRow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .controlHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .controlLabel,
+  .controlValue {
+    color: rgba(255, 255, 255, 0.62);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .controlValue {
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .sliderInput {
+    width: 100%;
+    accent-color: rgba(187, 233, 255, 0.95);
+  }
+  .faceIdBar {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    z-index: 4;
+    max-width: calc(100% - 16px);
+    padding: 4px 6px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 7px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    pointer-events: none;
+  }
+  .videoStage {
+    position: relative;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    margin: 0;
+  }
+  .videoPanels.isVisible .videoStage {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    margin: 0 auto;
+    cursor: pointer;
+  }
+  .loadedVideo {
+    display: none;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.08);
+    transform-origin: center center;
+    background: #000;
+  }
+  .videoStage.hasVideo .loadedVideo {
+    display: block;
+  }
+  .faceOverlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .videoStageAction {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 112px;
+    padding: 8px 12px;
+    border-radius: 999px;
+    background: rgba(18, 26, 36, 0.78);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    color: rgba(255, 255, 255, 0.82);
+    font-size: 8px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+    pointer-events: none;
+    transition: opacity 160ms ease, transform 160ms ease, background 160ms ease;
+  }
+  .videoStage.hasVideo .videoStageAction {
+    top: auto;
+    right: 8px;
+    left: auto;
+    bottom: 8px;
+    transform: none;
+    min-width: 0;
+    padding: 5px 8px;
+    background: rgba(18, 26, 36, 0.56);
+    opacity: 0.28;
+  }
+  .videoStage:hover .videoStageAction,
+  .videoStage:focus-visible .videoStageAction,
+  .videoStage.hasVideo:focus-within .videoStageAction {
+    opacity: 1;
+  }
+  .videoStage:focus-visible {
+    outline: 2px solid rgba(187, 233, 255, 0.72);
+    outline-offset: 2px;
+  }
+  .faceApiRail {
+    position: fixed;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 20;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: right;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.34);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    border-radius: 10px;
+    backdrop-filter: blur(8px);
+    opacity: 1;
+    transition: opacity 220ms ease;
+  }
+  .faceApiRail.isHidden {
+    opacity: 0;
+  }
+  .faceApiRailLabel {
+    letter-spacing: 0.18em;
+    font-size: 10px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.78);
+  }
+  .faceApiRailDetail {
+    max-width: 180px;
+    font-size: 10px;
+    line-height: 1.4;
+    color: rgba(255, 255, 255, 0.62);
+  }
+  .videoPanels.isVisible .videoPanel,
+  .cloudDebugCard,
+  .analysisDebugCard,
+  .faceApiRail {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.28);
+    background: rgba(9, 16, 24, 0.82);
+  }
+  .holdStillCue {
+    position: fixed;
+    left: 50%;
+    bottom: 11vh;
+    transform: translateX(-50%);
+    z-index: 21;
+    pointer-events: none;
+    color: rgba(255, 252, 246, 0.92);
+    font-size: clamp(14px, 1.8vw, 20px);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    text-shadow: 0 0 18px rgba(255, 248, 232, 0.28);
+    opacity: 0;
+    transition: opacity 180ms ease;
+    white-space: nowrap;
+  }
+  .analysisDebugPanel {
+    display: none;
+    position: fixed;
+    top: 18px;
+    left: 18px;
+    width: min(16vw, 168px);
+    min-width: 142px;
+    max-height: calc(100vh - 36px);
+    overflow: auto;
+    pointer-events: none;
+    z-index: 19;
+  }
+  .analysisDebugPanel.isVisible {
+    display: block;
+    pointer-events: auto;
+  }
+  .analysisDebugCard {
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 9px 25px rgba(0, 0, 0, 0.38);
+    backdrop-filter: blur(10px);
+    color: rgba(255, 255, 255, 0.9);
+  }
+  .analysisDebugHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 6px;
+    padding: 6px 7px 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .analysisDebugHeaderGroup {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+  }
+  .analysisDebugTitle {
+    font-size: 6px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.82);
+  }
+  .analysisDebugStatus {
+    font-size: 6px;
+    color: rgba(255, 255, 255, 0.66);
+  }
+  .analysisDebugToggle {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.84);
+    font: inherit;
+    font-size: 5px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 3px 5px;
+    cursor: pointer;
+  }
+  .analysisDebugToggle:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+  .analysisDebugMeta {
+    display: grid;
+    gap: 3px;
+    padding: 5px 7px 6px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .analysisDebugLabel {
+    font-size: 6px;
+    line-height: 1.3;
+    color: rgba(255, 255, 255, 0.66);
+  }
+  .analysisDebugTable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 6px;
+  }
+  .analysisDebugTable th,
+  .analysisDebugTable td {
+    padding: 3px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: right;
+    vertical-align: top;
+    white-space: nowrap;
+  }
+  .analysisDebugTable th:first-child,
+  .analysisDebugTable td:first-child {
+    text-align: left;
+    white-space: normal;
+  }
+  .analysisDebugTable thead th {
+    font-size: 5px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.56);
+  }
+  .analysisDebugTable tbody tr:last-child td {
+    border-bottom: 0;
+  }
+  .analysisDebugBody {
+    padding: 5px 6px 6px;
+  }
+  .analysisDebugBody .analysisDebugTable {
+    width: calc(100% + 6px);
+    margin: -2px -3px -2px;
+  }
+  .analysisEmptyState {
+    font-size: 6px;
+    line-height: 1.35;
+    color: rgba(255, 255, 255, 0.62);
+    padding: 2px 2px 0;
+  }
+  .analysisMetricName {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .analysisMetricDot {
+    width: 5px;
+    height: 5px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+  }
+  .analysisMetricKey {
+    display: block;
+    font-size: 4px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.46);
+  }
+  .analysisMetricState {
+    font-size: 5px;
+    line-height: 1.2;
+    color: rgba(255, 255, 255, 0.56);
+  }
+  .analysisMeterList {
+    display: grid;
+    gap: 5px;
+  }
+  .analysisMeterRow {
+    display: grid;
+    gap: 3px;
+  }
+  .analysisMeterHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 5px;
+  }
+  .analysisMeterLabel {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    font-size: 5px;
+    line-height: 1.1;
+  }
+  .analysisMeterValue {
+    font-size: 6px;
+    line-height: 1;
+    color: rgba(255, 255, 255, 0.86);
+  }
+  .analysisMeterTrack {
+    position: relative;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    overflow: hidden;
+  }
+  .analysisMeterFill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-radius: 999px;
+    min-width: 2px;
+  }
+  @media (max-width: 800px) {
+    .analysisDebugPanel.isVisible {
+      top: 12px;
+      left: 12px;
+      width: min(32vw, 170px);
+      min-width: 136px;
+      max-height: calc(100vh - 24px);
+    }
+    .cloudDebugPanel.isVisible {
+      left: 12px;
+      right: auto;
+      bottom: 12px;
+      width: auto;
+      min-width: 0;
+    }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <canvas id="cloud"></canvas>
+  <div class="holdStillCue" id="holdStillCue" aria-hidden="true">Hold still...</div>
+  <div class="faceApiRail" aria-live="polite">
+    <div class="faceApiRailLabel" id="faceApiStatus">face-api.js</div>
+    <div class="faceApiRailDetail" id="faceApiDetail">Loading local script...</div>
+    <div class="faceApiRailLabel" id="ml5Status" style="margin-top: 8px;">ml5</div>
+    <div class="faceApiRailDetail" id="ml5Detail">Loading local script...</div>
+    <div class="faceApiRailLabel" id="ml5FacemeshStatus" style="margin-top: 8px;">ml5 facemesh</div>
+    <div class="faceApiRailDetail" id="ml5FacemeshDetail">Waiting for camera.</div>
+  </div>
+  <div class="analysisDebugPanel" aria-live="polite">
+    <div class="analysisDebugCard">
+      <div class="analysisDebugHeader">
+        <div class="analysisDebugHeaderGroup">
+          <div class="analysisDebugTitle">Microgesture Analysis</div>
+          <div class="analysisDebugStatus" id="analysisDebugStatus">Waiting</div>
+        </div>
+        <button class="analysisDebugToggle" id="analysisDebugToggle" type="button">Show Values</button>
+      </div>
+      <div class="analysisDebugMeta">
+        <div class="analysisDebugLabel" id="analysisWinnerLabel">Winner none</div>
+        <div class="analysisDebugLabel" id="analysisSourceLabel">Source panel none</div>
+        <div class="analysisDebugLabel" id="analysisDetailLabel">Waiting for the current winner face.</div>
+      </div>
+      <div class="analysisDebugBody" id="analysisDebugBody"></div>
+    </div>
+  </div>
+  <div class="videoPanels">
+    <div class="videoPanel" data-panel-index="0" data-source-type="camera">
+      <div class="controlRow">
+        <div class="controlHeader">
+          <span class="controlLabel">ML Scale</span>
+          <span class="controlValue videoScaleValue">1.00x</span>
+        </div>
+        <input
+          class="sliderInput videoScaleSlider"
+          type="range"
+          min="0.50"
+          max="1.50"
+          step="0.01"
+          value="1.00"
+        />
+      </div>
+      <button class="cameraToggleButton" type="button" hidden aria-hidden="true" tabindex="-1">Start Camera</button>
+      <div class="videoStage" tabindex="0" role="button" aria-label="Start Camera">
+        <video class="loadedVideo" muted autoplay playsinline></video>
+        <canvas class="faceOverlay"></canvas>
+        <div class="faceIdBar">Persons: none</div>
+        <div class="videoStageAction">Start Camera</div>
+      </div>
+    </div>
+  </div>
+  <div class="cloudDebugPanel" aria-live="polite">
+    <div class="cloudDebugCard">
+      <div class="cloudDebugHeader">
+        <div class="cloudDebugTitle">Cloud Params</div>
+        <div class="cloudDebugLabel" id="cloudDebugLabel">Target none</div>
+      </div>
+      <div class="cloudDebugLabel" id="cloudDetectedLabel" style="padding: 8px 12px 0;">Detected none</div>
+      <div class="cloudDebugLabel" id="cloudTransitionStatus" style="padding: 8px 12px 0;">State stable</div>
+      <div class="cloudDebugLabel" id="cloudSunburstStatus" style="padding: 8px 12px 0;">Sunburst on</div>
+      <div class="cloudDebugLabel" id="cloudDebugHint" style="padding: 8px 12px 0;">Press d to toggle debug panels. Press s to toggle sunburst.</div>
+      <table class="cloudDebugTable">
+        <thead>
+          <tr>
+            <th>Parameter</th>
+            <th>Current</th>
+            <th>Target</th>
+          </tr>
+        </thead>
+        <tbody id="cloudDebugBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+function createMemoryStorageShim() {
+  const store = new Map();
+  return {
+    get length() {
+      return store.size;
+    },
+    clear() {
+      store.clear();
+    },
+    getItem(key) {
+      const normalizedKey = String(key);
+      return store.has(normalizedKey) ? store.get(normalizedKey) : null;
+    },
+    key(index) {
+      const keys = Array.from(store.keys());
+      return Number.isInteger(index) && index >= 0 && index < keys.length ? keys[index] : null;
+    },
+    removeItem(key) {
+      store.delete(String(key));
+    },
+    setItem(key, value) {
+      store.set(String(key), String(value));
+    },
+  };
+}
+
+function installSafeStorage(propertyName) {
+  const memoryStorage = createMemoryStorageShim();
+  try {
+    const storage = window[propertyName];
+    if (storage) {
+      const probeKey = '__storage_probe__';
+      storage.setItem(probeKey, '1');
+      storage.removeItem(probeKey);
+      return storage;
+    }
+  } catch (error) {
+    console.warn(`[storage] ${propertyName} is unavailable, using in-memory shim.`, error);
+  }
+
+  try {
+    Object.defineProperty(window, propertyName, {
+      configurable: true,
+      get() {
+        return memoryStorage;
+      },
+    });
+  } catch (error) {
+    console.warn(`[storage] Unable to redefine ${propertyName}.`, error);
+  }
+  return memoryStorage;
+}
+
+installSafeStorage('localStorage');
+installSafeStorage('sessionStorage');
+
+window.faceApiScriptStatus = 'loading';
+window.setFaceApiScriptStatus = function setFaceApiScriptStatus(status, detail) {
+  window.faceApiScriptStatus = status;
+  const statusEl = document.getElementById('faceApiStatus');
+  const detailEl = document.getElementById('faceApiDetail');
+  if (!statusEl || !detailEl) return;
+
+  if (status === 'ready') {
+    statusEl.textContent = 'face-api.js ready';
+    detailEl.textContent = detail || 'Local script loaded.';
+    return;
+  }
+  if (status === 'error') {
+    statusEl.textContent = 'face-api.js error';
+    detailEl.textContent = detail || 'Local script failed to load.';
+    return;
+  }
+
+  statusEl.textContent = 'face-api.js loading';
+  detailEl.textContent = detail || 'Loading local script...';
+};
+window.ml5ScriptStatus = 'loading';
+window.ml5ScriptDetail = 'Loading local script...';
+window.setMl5ScriptStatus = function setMl5ScriptStatus(status, detail) {
+  window.ml5ScriptStatus = status;
+  window.ml5ScriptDetail = detail || '';
+  if (typeof syncMl5RailWithScriptStatus === 'function') {
+    syncMl5RailWithScriptStatus();
+  }
+};
+</script>
+<script src="./face-api.min.js" onload="setFaceApiScriptStatus('ready', 'Local script loaded.')" onerror="setFaceApiScriptStatus('error', 'Unable to load ./face-api.min.js')"></script>
+<script src="./ml5.min.js" onload="setMl5ScriptStatus(window.ml5 ? 'ready' : 'error', window.ml5 ? 'Local script loaded.' : 'ml5.min.js loaded, but window.ml5 is unavailable.')" onerror="setMl5ScriptStatus('error', 'Unable to load ./ml5.min.js')"></script>
+<script src="./dynamic%20normalized.js"></script>
+<script>
+// ── PERSON REGISTRY ──────────────────────────────────────────
+const people = [];
+let activePerson = null;
+let lastTransitionedPerson = null;
+let pulseConfirmedWinnerKey = null;
+let pulsePendingWinnerKey = null;
+let pulsePendingSinceMs = 0;
+let pulseConfirmedWinnerSeenAtMs = 0;
+
+// ── CLOUD PARAMETER SPACE ────────────────────────────────────
+const PARAM_RANGES = {
+  skyH: { min: 190, max: 210 }, skyS: { min: 12, max: 78 }, skyV: { min: 22, max: 85 },
+  turbulence: { min: 0, max: 4 }, noiseOffset: { min: 0.05, max: 0.78 }, noiseCeiling: { min: 0.08, max: 0.88 },
+};
+const PARAM_KEYS = Object.keys(PARAM_RANGES);
+
+function normalizedToCloud(norm) {
+  const cloud = {};
+  PARAM_KEYS.forEach((k, i) => { const r = PARAM_RANGES[k]; cloud[k] = r.min + norm[i] * (r.max - r.min); });
+  return cloud;
+}
+
+// ── CYCLING POISSON ──────────────────────────────────────────
+const RECENT_PRIORITY_HISTORY = 3;
+const RECENT_SECONDARY_HISTORY = 20;
+const RECENT_GUARD_HISTORY = 100;
+const personNormHistory = [];
+let facemeshPendingGeneration = false;
+let facemeshThresholdWasExceededForGeneration = false;
+
+const EDGE_ANCHORS = [
+  [0.0, 1.0, 0.8, 0.0, 0.2, 0.9],
+  [1.0, 0.0, 0.1, 1.0, 0.9, 0.0],
+  [0.5, 0.8, 1.0, 0.6, 0.0, 1.0],
+  [0.0, 0.2, 0.0, 0.3, 0.8, 0.1],
+];
+
+// Turbulence (index 3) biased toward lower values via power curve
+function randomCandidate() {
+  return Array.from({ length: 6 }, (_, i) => {
+    if (i === 3) return Math.random() ** 1.5;
+    return Math.random();
+  });
+}
+
+function getMinDistanceToSet(candidate, norms) {
+  if (!norms.length) return Infinity;
+  let minDistance = Infinity;
+  for (const norm of norms) {
+    const distance = dist6(candidate, norm);
+    if (distance < minDistance) minDistance = distance;
+  }
+  return minDistance;
+}
+
+function isCandidateBetter(candidateScore, bestScore) {
+  if (!bestScore) return true;
+  if (candidateScore.primaryMinDistance !== bestScore.primaryMinDistance) {
+    return candidateScore.primaryMinDistance > bestScore.primaryMinDistance;
+  }
+  if (candidateScore.secondaryMinDistance !== bestScore.secondaryMinDistance) {
+    return candidateScore.secondaryMinDistance > bestScore.secondaryMinDistance;
+  }
+  if (candidateScore.guardMinDistance !== bestScore.guardMinDistance) {
+    return candidateScore.guardMinDistance > bestScore.guardMinDistance;
+  }
+  return candidateScore.fullHistoryMinDistance > bestScore.fullHistoryMinDistance;
+}
+
+function findMaximallyDifferent() {
+  if (personNormHistory.length === 0) {
+    return EDGE_ANCHORS[Math.floor(Math.random() * EDGE_ANCHORS.length)].slice();
+  }
+  const primaryHistory = personNormHistory.slice(-RECENT_PRIORITY_HISTORY);
+  const secondaryHistory = personNormHistory.slice(-RECENT_SECONDARY_HISTORY);
+  const guardHistory = personNormHistory.slice(-RECENT_GUARD_HISTORY);
+  let bestPoint = null;
+  let bestScore = null;
+  for (let c = 0; c < 5000; c++) {
+    const cand = randomCandidate();
+    const candidateScore = {
+      primaryMinDistance: getMinDistanceToSet(cand, primaryHistory),
+      secondaryMinDistance: getMinDistanceToSet(cand, secondaryHistory),
+      guardMinDistance: getMinDistanceToSet(cand, guardHistory),
+      fullHistoryMinDistance: getMinDistanceToSet(cand, personNormHistory),
+    };
+    if (isCandidateBetter(candidateScore, bestScore)) {
+      bestScore = candidateScore;
+      bestPoint = cand;
+    }
+  }
+  return bestPoint;
+}
+
+function registerPerson({ trackForFacemesh = true } = {}) {
+  const norm = findMaximallyDifferent();
+  personNormHistory.push(norm);
+  const person = addPersonFromNorm(norm);
+  if (trackForFacemesh) {
+    facemeshPendingGeneration = true;
+    facemeshThresholdWasExceededForGeneration = false;
+    const cameraPanelState = getCameraPanelState();
+    if (cameraPanelState && (cameraPanelState.ml5FacemeshReady || cameraPanelState.ml5FacemeshLoading || cameraPanelState.ml5Predictions.length)) {
+      resetMl5AnalysisForPanel(cameraPanelState);
+    }
+  }
+  return person;
+}
+
+function encodeNorm(norm) {
+  return norm
+    .map(v => Math.round(clamp(v, 0, 1) * 999).toString(36).padStart(2, '0'))
+    .join('')
+    .toUpperCase();
+}
+
+function decodeNorm(code) {
+  if (!/^[0-9A-Z]{12}$/.test(code)) return null;
+  const norm = [];
+  for (let i = 0; i < code.length; i += 2) {
+    const value = parseInt(code.slice(i, i + 2), 36);
+    if (!Number.isFinite(value) || value > 999) return null;
+    norm.push(value / 999);
+  }
+  return norm;
+}
+
+function addPersonFromNorm(norm) {
+  const personCode = encodeNorm(norm);
+  const existing = people.find(person => person.personCode === personCode);
+  if (existing) return existing;
+  const id = people.length + 1;
+  const person = { id, norm, personCode, cloudParams: normalizedToCloud(norm) };
+  people.push(person);
+  return person;
+}
+
+// ── SUN PULSE ───────────────────────────────────────────────
+let sunPulseLevel = 0;
+let sunPulseMode = 'idle';
+let sunPulseHoverPhase = 0;
+let sunPulseLastUpdateMs = 0;
+let sunPulseHasFaceLatch = false;
+let sunPulseTransitionCommitted = false;
+let sunPulseTransitionPending = false;
+let pendingTransitionPerson = null;
+let sunPulseLockedWinnerKey = null;
+let sunPulseLockedWinnerPerson = null;
+let sunPulseLockedWinnerVisible = false;
+let transitionFlashLevel = 0;
+let transitionFlashDirection = 0;
+let transitionFlashSpread = 0;
+let sunPulseCurrentFallPerMs = 0;
+let cloudWinnerTransitionStartedAtMs = 0;
+const SUN_PULSE_FILL_MS = 2000;
+const SUN_PULSE_RISE_PER_MS = 1 / SUN_PULSE_FILL_MS;
+const SUN_PULSE_FALL_PER_MS = 1 / SUN_PULSE_FILL_MS;
+const TRANSITION_FLASH_RISE_PER_MS = 1 / 450;
+const TRANSITION_FLASH_FALL_PER_MS = 1 / 1300;
+const TRANSITION_FLASH_SPREAD_PER_MS = 1 / 1700;
+const SUN_PULSE_TRIGGER_LEVEL = 0.82;
+const SUN_PULSE_HOVER_MIN = 0.86;
+const SUN_PULSE_HOVER_MAX = 1.0;
+const SUN_PULSE_HOVER_SPEED = 0.0075;
+
+function clearSunPulseWinnerLock() {
+  sunPulseLockedWinnerKey = null;
+  sunPulseLockedWinnerPerson = null;
+  sunPulseLockedWinnerVisible = false;
+}
+
+function startSunPulseAdvance() {
+  if (sunPulseTransitionCommitted) return;
+  sunPulseMode = 'advancing';
+}
+
+function startSunPulseRecede() {
+  sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+  sunPulseMode = sunPulseLevel > 0 ? 'receding' : 'idle';
+}
+
+function startSunPulseHover() {
+  sunPulseMode = 'hovering';
+}
+
+function updateSunPulse(now) {
+  if (!sunPulseLastUpdateMs) {
+    sunPulseLastUpdateMs = now;
+    return;
+  }
+
+  const dt = Math.min(80, now - sunPulseLastUpdateMs);
+  sunPulseLastUpdateMs = now;
+
+  if (sunPulseMode === 'advancing') {
+    sunPulseLevel = clamp(sunPulseLevel + dt * SUN_PULSE_RISE_PER_MS, 0, 1);
+    if (sunPulseLevel >= 1) {
+      sunPulseLevel = 1;
+      sunPulseMode = 'idle';
+      if (!sunPulseTransitionCommitted && sunPulseLockedWinnerVisible && sunPulseLockedWinnerPerson) {
+        commitSunPulseTransition(sunPulseLockedWinnerPerson);
+      }
+    }
+  } else if (sunPulseMode === 'receding') {
+    sunPulseLevel = clamp(sunPulseLevel - dt * sunPulseCurrentFallPerMs, 0, 1);
+    if (sunPulseLevel <= 0) {
+      sunPulseLevel = 0;
+      sunPulseMode = 'idle';
+      sunPulseHoverPhase = 0;
+      sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+      if (!sunPulseTransitionCommitted) {
+        clearSunPulseWinnerLock();
+      }
+    }
+  } else if (sunPulseMode === 'hovering') {
+    sunPulseHoverPhase += dt * SUN_PULSE_HOVER_SPEED;
+    const wave = (Math.sin(sunPulseHoverPhase) + 1) * 0.5;
+    sunPulseLevel = lerp(SUN_PULSE_HOVER_MIN, SUN_PULSE_HOVER_MAX, wave);
+  }
+
+  if (transitionFlashDirection > 0) {
+    transitionFlashLevel = clamp(transitionFlashLevel + dt * TRANSITION_FLASH_RISE_PER_MS, 0, 1);
+    transitionFlashSpread = clamp(transitionFlashSpread + dt * TRANSITION_FLASH_SPREAD_PER_MS, 0, 1);
+    if (transitionFlashLevel >= 1) {
+      transitionFlashLevel = 1;
+      transitionFlashDirection = -1;
+    }
+  } else if (transitionFlashDirection < 0) {
+    transitionFlashLevel = clamp(transitionFlashLevel - dt * TRANSITION_FLASH_FALL_PER_MS, 0, 1);
+    transitionFlashSpread = clamp(transitionFlashSpread + dt * TRANSITION_FLASH_SPREAD_PER_MS, 0, 1);
+    if (transitionFlashLevel <= 0) {
+      transitionFlashLevel = 0;
+      transitionFlashDirection = 0;
+      transitionFlashSpread = 0;
+    }
+  }
+}
+
+function getSunPulseIntensity() {
+  return sunPulseLevel;
+}
+
+// ── CLOUD RENDERER ───────────────────────────────────────────
+const OpenSimplex=(function(){const S=-0.211324865405187,Q=0.366025403784439,N=47;const G=[5,2,2,5,-5,2,-2,5,5,-2,2,-5,-5,-2,-2,-5];function sd(s){s=BigInt(s);const p=new Uint8Array(256),r=new Uint8Array(256);for(let i=0;i<256;i++)r[i]=i;for(let k=0;k<3;k++)s=s*6364136223846793005n+1442695040888963407n;for(let i=255;i>=0;i--){s=s*6364136223846793005n+1442695040888963407n;let v=Number((s+31n)%BigInt(i+1));if(v<0)v+=i+1;p[i]=r[v];r[v]=r[i]}return p}return function(s){const p=sd(s);return{noise2D(x,y){const so=(x+y)*S,xs=x+so,ys=y+so;const xsb=Math.floor(xs),ysb=Math.floor(ys);const qo=(xsb+ysb)*Q;const dx0=x-(xsb+qo),dy0=y-(ysb+qo);const xi=xs-xsb,yi=ys-ysb,ins=xi+yi;let v=0;const c=(ddx,ddy,xv,yv)=>{let a=2-ddx*ddx-ddy*ddy;if(a>0){a*=a;const i=p[(p[xv&255]+yv)&255]%8*2;v+=a*a*(G[i]*ddx+G[i+1]*ddy)}};c(dx0-1-Q,dy0-Q,xsb+1,ysb);c(dx0-Q,dy0-1-Q,xsb,ysb+1);c(dx0,dy0,xsb,ysb);if(ins>1)c(dx0-1-2*Q,dy0-1-2*Q,xsb+1,ysb+1);else if(xi>yi)c(dx0+1,dy0-1,xsb-1,ysb+1);else c(dx0-1,dy0+1,xsb+1,ysb-1);return v/N}}}})();
+const lerp=(a,b,t)=>a+(b-a)*t, clamp=(v,lo,hi)=>v<lo?lo:v>hi?hi:v, rnd=(a,b)=>a+Math.random()*(b-a), rndI=(a,b)=>Math.floor(rnd(a,b+1));
+function hsvToRgb(h,s,v){s/=100;v/=100;const c=v*s,x=c*(1-Math.abs((h/60)%2-1)),m=v-c;let r=0,g=0,b=0;if(h<60){r=c;g=x}else if(h<120){r=x;g=c}else if(h<180){g=c;b=x}else if(h<240){g=x;b=c}else if(h<300){r=x;b=c}else{r=c;b=x}return[(r+m)*255|0,(g+m)*255|0,(b+m)*255|0]}
+function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;const mx=Math.max(r,g,b),mn=Math.min(r,g,b),d=mx-mn;let h=0;if(d>0){if(mx===r)h=60*(((g-b)/d)%6);else if(mx===g)h=60*((b-r)/d+2);else h=60*((r-g)/d+4)}if(h<0)h+=360;return[Math.round(h),Math.round(mx===0?0:(d/mx)*100),Math.round(mx*100)]}
+function lerpHsv(a,b,t){let dh=b[0]-a[0];if(dh>180)dh-=360;if(dh<-180)dh+=360;let h=a[0]+dh*t;if(h<0)h+=360;if(h>=360)h-=360;return[h,lerp(a[1],b[1],t),lerp(a[2],b[2],t)]}
+
+let cloudCurrent={skyH:200,skyS:45,skyV:55,turbulence:1.5,noiseOffset:0.4,noiseCeiling:0.5};
+let cloudBaseTarget={...cloudCurrent};
+let cloudTarget={...cloudCurrent};
+let cloudMicrogestureOffsets={turbulence:0,noiseOffset:0,noiseCeiling:0};
+let transitionSpeed=0.002, regenMs=400;
+const darkCutoff=0.62, edgeCutoff=0.92, EDGE_B=rgbToHsv(252,248,210);
+const MICROGESTURE_PARAM_DEPTH = { turbulence: 4.0, noiseOffset: 0.42, noiseCeiling: 1.1 };
+const MICROGESTURE_PARAM_SMOOTHING = 0.18;
+let simplex=OpenSimplex(Math.floor(Math.random()*999999));
+let timeOffset=0;
+function n2(x,y){return simplex.noise2D(x,y)*0.5+0.5}
+function getSky(){return[cloudCurrent.skyH,cloudCurrent.skyS,cloudCurrent.skyV]}
+function getDarkA(){const sk=getSky();let h=sk[0]+23;if(h>=360)h-=360;return[h,sk[1],Math.max(0,sk[2]-29)]}
+function getMidB(){const dA=getDarkA();return[dA[0],Math.max(0,dA[1]-46),Math.min(100,dA[2]+31)]}
+function applyMicrogestureDeadzone(value, deadzone = 0.08) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  if (Math.abs(safeValue) <= deadzone) return 0;
+  const normalized = (Math.abs(safeValue) - deadzone) / (1 - deadzone);
+  return Math.sign(safeValue) * clamp(normalized, 0, 1);
+}
+function getCurrentWinnerAnalysisState() {
+  if (!isWinnerSystemReady()) return null;
+  const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
+  const winnerPerson = getPersonForWinnerSnapshot(winnerSnapshot);
+  if (!winnerPerson) return null;
+  return analysisStateByPersonId.get(winnerPerson.id) || null;
+}
+function updateCloudTargetWithMicrogestures() {
+  const desiredOffsets = { turbulence: 0, noiseOffset: 0, noiseCeiling: 0 };
+  if (activePerson) {
+    const winnerAnalysisState = getCurrentWinnerAnalysisState();
+    const metrics = winnerAnalysisState?.normalizedMetrics;
+    if (metrics) {
+      const mouthOpen = clamp(metrics.mouthOpen ?? 0, 0, 1);
+      const mouthCenterShift = applyMicrogestureDeadzone(metrics.mouthCenterShift ?? 0, 0.08);
+      const blinkAsymmetry = applyMicrogestureDeadzone(metrics.blinkAsymmetry ?? 0, 0.05);
+      desiredOffsets.turbulence = mouthOpen * MICROGESTURE_PARAM_DEPTH.turbulence;
+      desiredOffsets.noiseOffset = mouthCenterShift * MICROGESTURE_PARAM_DEPTH.noiseOffset;
+      desiredOffsets.noiseCeiling = blinkAsymmetry * MICROGESTURE_PARAM_DEPTH.noiseCeiling;
+    }
+  }
+  cloudMicrogestureOffsets.turbulence = lerp(cloudMicrogestureOffsets.turbulence, desiredOffsets.turbulence, MICROGESTURE_PARAM_SMOOTHING);
+  cloudMicrogestureOffsets.noiseOffset = lerp(cloudMicrogestureOffsets.noiseOffset, desiredOffsets.noiseOffset, MICROGESTURE_PARAM_SMOOTHING);
+  cloudMicrogestureOffsets.noiseCeiling = lerp(cloudMicrogestureOffsets.noiseCeiling, desiredOffsets.noiseCeiling, MICROGESTURE_PARAM_SMOOTHING);
+  cloudTarget = {
+    ...cloudBaseTarget,
+    turbulence: clamp(cloudBaseTarget.turbulence + cloudMicrogestureOffsets.turbulence, PARAM_RANGES.turbulence.min, PARAM_RANGES.turbulence.max),
+    noiseOffset: clamp(cloudBaseTarget.noiseOffset + cloudMicrogestureOffsets.noiseOffset, PARAM_RANGES.noiseOffset.min, PARAM_RANGES.noiseOffset.max),
+    noiseCeiling: clamp(cloudBaseTarget.noiseCeiling + cloudMicrogestureOffsets.noiseCeiling, PARAM_RANGES.noiseCeiling.min, PARAM_RANGES.noiseCeiling.max),
+  };
+}
+
+const cloudCan=document.getElementById('cloud'),cctx=cloudCan.getContext('2d');
+function resizeCloud(){cloudCan.width=window.innerWidth;cloudCan.height=window.innerHeight}
+resizeCloud();window.addEventListener('resize',resizeCloud);
+
+const IS_MOBILE_SAFARI = /iPad|iPhone|iPod/.test(navigator.userAgent)
+  || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const PERF_PROFILES = {
+  relaxed: { regenMs: 340, cloudScale: 0.92, targetStrokes: 3800, maxStrokeAttempts: 38000, detectorInputSize: 352, minDetectionIntervalMs: 150, ml5MinPredictionIntervalMs: 90, processingMaxWidth: 704 },
+  balanced: { regenMs: 400, cloudScale: 0.84, targetStrokes: 3100, maxStrokeAttempts: 31000, detectorInputSize: 320, minDetectionIntervalMs: 185, ml5MinPredictionIntervalMs: 120, processingMaxWidth: 640 },
+  stability: { regenMs: 480, cloudScale: 0.76, targetStrokes: 2400, maxStrokeAttempts: 24000, detectorInputSize: 288, minDetectionIntervalMs: 230, ml5MinPredictionIntervalMs: 150, processingMaxWidth: 576 },
+};
+const PERF_PROFILE_ORDER = ['relaxed', 'balanced', 'stability'];
+let activePerfProfileName = 'balanced';
+let activePerfProfile = PERF_PROFILES[activePerfProfileName];
+let lastPerfProfileSwitchAtMs = 0;
+let CLOUD_W = 0;
+let CLOUD_H = 0;
+let BLEED = 0;
+let BUF_W = 0;
+let BUF_H = 0;
+let BASE_RX = 0;
+let CX = 0;
+let CY = 0;
+const VERTS=62,STEPS=30;
+let TARGET = 0;
+let MAX_ATT = 0;
+const buf=document.createElement('canvas');
+const bctx=buf.getContext('2d');
+const bgCan=document.createElement('canvas');
+const bgCtx=bgCan.getContext('2d');
+const cloudFrameHoldCan = document.createElement('canvas');
+const cloudFrameHoldCtx = cloudFrameHoldCan.getContext('2d');
+const PERF_WINDOW_MS = 3000;
+const PERF_PROFILE_SWITCH_COOLDOWN_MS = 8000;
+const PERF_DOWNGRADE_DELAY_MS = 2000;
+const PERF_UPGRADE_DELAY_MS = 8000;
+lastPerfProfileSwitchAtMs = performance.now() - PERF_PROFILE_SWITCH_COOLDOWN_MS;
+let performanceWindows = {
+  frameDt: [],
+  regen: [],
+  detectorAge: [],
+  ml5Age: [],
+};
+let cloudPerfSnapshot = {
+  fps: 0,
+  regenAvg: 0,
+  regenP95: 0,
+  detectorAge: 0,
+  ml5Age: 0,
+};
+let currentCloudScale = 1;
+let cloudDisplayCan = null;
+let cloudDisplayBleed = 0;
+let cloudDisplayW = 0;
+let cloudDisplayH = 0;
+let cloudDisplaySource = 'empty';
+let cloudDisplayProfileScale = 1;
+
+function hasCloudDisplay() {
+  return Boolean(cloudDisplayCan && cloudDisplayW > 0 && cloudDisplayH > 0);
+}
+
+function getCloudDisplaySourceRect() {
+  if (!hasCloudDisplay()) return null;
+  const profileScale = Math.max(0.0001, cloudDisplayProfileScale || 1);
+  const desiredW = Math.min(cloudDisplayCan.width, Math.round(cloudDisplayW / profileScale));
+  const desiredH = Math.min(cloudDisplayCan.height, Math.round(cloudDisplayH / profileScale));
+  const sourceX = Math.max(0, Math.round((cloudDisplayCan.width - desiredW) * 0.5));
+  const sourceY = Math.max(0, Math.round((cloudDisplayCan.height - desiredH) * 0.5));
+  return {
+    x: sourceX,
+    y: sourceY,
+    width: desiredW,
+    height: desiredH,
+  };
+}
+
+function setCloudDisplay(canvas, bleed, width, height, source = 'working', profileScale = currentCloudScale) {
+  cloudDisplayCan = canvas;
+  cloudDisplayBleed = bleed;
+  cloudDisplayW = width;
+  cloudDisplayH = height;
+  cloudDisplaySource = source;
+  cloudDisplayProfileScale = profileScale;
+}
+
+function preserveCurrentCloudDisplay() {
+  if (!hasCloudDisplay()) return;
+  cloudFrameHoldCan.width = cloudDisplayCan.width;
+  cloudFrameHoldCan.height = cloudDisplayCan.height;
+  cloudFrameHoldCtx.clearRect(0, 0, cloudFrameHoldCan.width, cloudFrameHoldCan.height);
+  cloudFrameHoldCtx.drawImage(cloudDisplayCan, 0, 0);
+  setCloudDisplay(cloudFrameHoldCan, cloudDisplayBleed, cloudDisplayW, cloudDisplayH, 'held', cloudDisplayProfileScale);
+}
+
+function rebuildCloudBuffers() {
+  const scale = activePerfProfile.cloudScale;
+  currentCloudScale = scale;
+  CLOUD_W = Math.round(1800 * scale);
+  CLOUD_H = Math.round(1360 * scale);
+  BLEED = Math.round(480 * scale);
+  BUF_W = CLOUD_W + BLEED * 2;
+  BUF_H = CLOUD_H + BLEED * 2;
+  BASE_RX = Math.round(760 * scale);
+  CX = BUF_W / 2;
+  CY = BUF_H / 2;
+  TARGET = activePerfProfile.targetStrokes;
+  MAX_ATT = activePerfProfile.maxStrokeAttempts;
+  buf.width = BUF_W;
+  buf.height = BUF_H;
+  bgCan.width = BUF_W;
+  bgCan.height = BUF_H;
+}
+
+function setActivePerfProfile(profileName, { force = false } = {}) {
+  if (!PERF_PROFILES[profileName]) return;
+  if (!force && profileName === activePerfProfileName) return;
+  preserveCurrentCloudDisplay();
+  activePerfProfileName = profileName;
+  activePerfProfile = PERF_PROFILES[profileName];
+  regenMs = activePerfProfile.regenMs;
+  lastPerfProfileSwitchAtMs = performance.now();
+  rebuildCloudBuffers();
+  forceCloudRedraw = true;
+  syncMl5FacemeshRail();
+  updateCloudDebug();
+  updateAnalysisDebugPanel();
+}
+
+function trimPerfWindow(samples, now) {
+  while (samples.length && now - samples[0].at > PERF_WINDOW_MS) {
+    samples.shift();
+  }
+}
+
+function recordPerfSample(bucketName, value, now = performance.now()) {
+  if (!Number.isFinite(value)) return;
+  const bucket = performanceWindows[bucketName];
+  if (!bucket) return;
+  bucket.push({ at: now, value });
+  trimPerfWindow(bucket, now);
+}
+
+function getPerfSummary(bucketName, now = performance.now()) {
+  const bucket = performanceWindows[bucketName];
+  if (!bucket) return { avg: 0, p95: 0, count: 0 };
+  trimPerfWindow(bucket, now);
+  if (!bucket.length) return { avg: 0, p95: 0, count: 0 };
+  const values = bucket.map((entry) => entry.value).sort((a, b) => a - b);
+  const avg = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const p95 = values[Math.min(values.length - 1, Math.floor((values.length - 1) * 0.95))];
+  return { avg, p95, count: values.length };
+}
+
+function getProfileIndex(profileName = activePerfProfileName) {
+  return PERF_PROFILE_ORDER.indexOf(profileName);
+}
+
+function shiftPerfProfile(direction) {
+  const currentIndex = getProfileIndex();
+  if (currentIndex < 0) return;
+  const nextIndex = clamp(currentIndex + direction, 0, PERF_PROFILE_ORDER.length - 1);
+  if (nextIndex === currentIndex) return;
+  setActivePerfProfile(PERF_PROFILE_ORDER[nextIndex]);
+}
+
+function updateAdaptivePerfProfile(now) {
+  const timeSinceSwitch = now - lastPerfProfileSwitchAtMs;
+  if (timeSinceSwitch < PERF_PROFILE_SWITCH_COOLDOWN_MS) return;
+  const frameStats = getPerfSummary('frameDt', now);
+  const regenStats = getPerfSummary('regen', now);
+  const detectorStats = getPerfSummary('detectorAge', now);
+  const ml5Stats = getPerfSummary('ml5Age', now);
+  const fps = frameStats.avg > 0 ? 1000 / frameStats.avg : 0;
+  const detectorAge = detectorStats.avg || 0;
+  const ml5Age = ml5Stats.avg || 0;
+
+  cloudPerfSnapshot = {
+    fps,
+    regenAvg: regenStats.avg || 0,
+    regenP95: regenStats.p95 || 0,
+    detectorAge,
+    ml5Age,
+  };
+
+  const shouldDowngrade = fps < 20
+    || regenStats.p95 > 90
+    || detectorAge > 700
+    || ml5Age > 900;
+  const shouldUpgrade = fps > 28
+    && regenStats.p95 > 0
+    && regenStats.p95 < 55
+    && detectorAge > 0 && detectorAge < 350
+    && ml5Age > 0 && ml5Age < 450;
+
+  if (shouldDowngrade && timeSinceSwitch >= PERF_DOWNGRADE_DELAY_MS) {
+    shiftPerfProfile(1);
+    return;
+  }
+  if (shouldUpgrade && timeSinceSwitch >= PERF_UPGRADE_DELAY_MS) {
+    shiftPerfProfile(-1);
+  }
+}
+
+rebuildCloudBuffers();
+
+function drawPulseOverlay(ctx, canW, canH) {
+  const pulse = getSunPulseIntensity();
+  if (pulse <= 0) return;
+  const easedPulse = Math.pow(pulse, 0.68);
+  const alpha = easedPulse * 0.96;
+  const cx = canW * 0.5;
+  const cy = canH * 0.5;
+  const innerR = Math.min(canW, canH) * 0.32;
+  const outerR = Math.sqrt(cx * cx + cy * cy);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+  grad.addColorStop(0, 'rgba(255,250,235,0)');
+  grad.addColorStop(0.28, `rgba(255,246,225,${clamp(alpha * 0.04, 0, 1)})`);
+  grad.addColorStop(0.52, `rgba(255,248,232,${clamp(alpha * 0.15, 0, 1)})`);
+  grad.addColorStop(0.72, `rgba(255,252,244,${clamp(alpha * 0.42, 0, 1)})`);
+  grad.addColorStop(0.88, `rgba(255,255,255,${clamp(alpha * 0.82, 0, 1)})`);
+  grad.addColorStop(1, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, canW, canH);
+  ctx.restore();
+}
+
+function drawTransitionFlashOverlay(ctx, canW, canH) {
+  if (transitionFlashLevel <= 0) return;
+  const alpha = Math.pow(transitionFlashLevel, 1.08) * 0.32;
+  const cx = canW * 0.5;
+  const cy = canH * 0.5;
+  const spread = Math.pow(transitionFlashSpread, 0.92);
+  const size = Math.min(canW, canH) * (0.24 + spread * 1.28);
+  ctx.save();
+  ctx.globalCompositeOperation = 'screen';
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, size);
+  grad.addColorStop(0, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
+  grad.addColorStop(0.2, `rgba(255,252,245,${clamp(alpha * 0.88, 0, 1)})`);
+  grad.addColorStop(0.45, `rgba(255,246,228,${clamp(alpha * 0.42, 0, 1)})`);
+  grad.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = grad;
+  ctx.fillRect(cx - size, cy - size, size * 2, size * 2);
+  ctx.restore();
+}
+
+function drawStrokePath(c,px,py){c.beginPath();c.moveTo(px[0],py[0]);for(let i=1;i<VERTS;i++)c.lineTo(px[i],py[i]);c.closePath()}
+function drawBackground(){const sk=hsvToRgb(...getSky());bgCtx.fillStyle=`rgb(${sk[0]},${sk[1]},${sk[2]})`;bgCtx.fillRect(0,0,BUF_W,BUF_H);const sunX=CX,sunY=CY,sunR=200;const grad=bgCtx.createRadialGradient(sunX,sunY,0,sunX,sunY,sunR*5);grad.addColorStop(0,'rgba(255,255,250,1.0)');grad.addColorStop(0.06,'rgba(255,253,242,0.95)');grad.addColorStop(0.14,'rgba(255,248,225,0.6)');grad.addColorStop(0.25,'rgba(255,240,210,0.3)');grad.addColorStop(0.4,`rgba(${lerp(255,sk[0],0.3)|0},${lerp(255,sk[1],0.3)|0},${lerp(250,sk[2],0.3)|0},0.12)`);grad.addColorStop(0.6,`rgba(${lerp(255,sk[0],0.7)|0},${lerp(255,sk[1],0.7)|0},${lerp(250,sk[2],0.7)|0},0.05)`);grad.addColorStop(1,`rgba(${sk[0]},${sk[1]},${sk[2]},0)`);bgCtx.fillStyle=grad;bgCtx.fillRect(0,0,BUF_W,BUF_H);bgCtx.fillStyle='#ffffff';bgCtx.beginPath();bgCtx.arc(sunX,sunY,sunR,0,Math.PI*2);bgCtx.fill()}
+function sdf(x,y){const nx=(x-CX)/BASE_RX,ny=(y-CY)/440;let d=nx*nx+ny*ny*1.7,ns=0.009,t=cloudCurrent.turbulence,o=timeOffset;d-=(n2(x*ns+o,y*ns*1.4+o)-0.5)*t;d-=(n2(x*ns*2.2+40+o,y*ns*2.2+40+o)-0.5)*0.45*t;d-=(n2(x*ns*0.5+80+o,y*ns*0.5+80+o)-0.5)*0.55*t;return d+cloudCurrent.noiseOffset}
+function dCol(d){const dv=-0.6*Math.max(1,cloudCurrent.turbulence),ev=0.80;let t=clamp((d-dv)/(ev-dv),0,1);t=Math.max(t,1.0-cloudCurrent.noiseCeiling);const dA=getDarkA(),mB=getMidB(),eB=EDGE_B,dB=lerpHsv(dA,mB,0.5);let hsv;if(t<darkCutoff)hsv=lerpHsv(dA,dB,t/darkCutoff);else if(t<edgeCutoff)hsv=lerpHsv(dB,mB,(t-darkCutoff)/(edgeCutoff-darkCutoff));else hsv=lerpHsv(mB,eB,(t-edgeCutoff)/(1-edgeCutoff));const[r,g,b]=hsvToRgb(hsv[0],hsv[1],hsv[2]);return[clamp(r+rnd(-6,6),0,255)|0,clamp(g+rnd(-6,6),0,255)|0,clamp(b+rnd(-6,6),0,255)|0]}
+let strokes=[];
+function bake(s){const hw=s.len*.5,hh=s.thick*.5,fray=s.thick*.85,nO=rnd(0,1000),nS=0.22;const px=new Float32Array(VERTS),py=new Float32Array(VERTS);let vi=0;for(let i=0;i<=STEPS;i++){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=-hh*e+(n2(nO+t*nS*5,0)-.5)*2*fray*e;vi++}for(let i=STEPS;i>=0;i--){const t=i/STEPS;px[vi]=lerp(-hw,hw,t);const e=Math.min(1,Math.min(t,1-t)*10);py[vi]=hh*e+(n2(nO+50+t*nS*5,0)-.5)*2*fray*e;vi++}s.px=px;s.py=py}
+function spawn(){const rx=840+BLEED*.5,ry=580+BLEED*.5;const x=rnd(CX-rx,CX+rx),y=rnd(CY-ry,CY+ry),d=sdf(x,y);let len,thick,angle,alpha;if(d<0){len=rnd(100,260);thick=rnd(28,76);angle=rnd(-.3,.3);alpha=rndI(140,230)}else if(d<.55){len=rnd(70,220);thick=rnd(20,60);angle=rnd(-.4,.4);alpha=rndI(110,210)}else if(d<.82){len=rnd(30,120);thick=rnd(10,36);angle=rnd(-Math.PI/2,Math.PI/2);alpha=rndI(50,140)}else return null;const s={x,y,len,thick,angle,alpha:clamp(alpha,1,255),col:dCol(d),depth:d};bake(s);return s}
+function generateCloud(){timeOffset+=0.005;drawBackground();bctx.drawImage(bgCan,0,0);strokes=[];let att=0;while(strokes.length<TARGET&&att<MAX_ATT){const s=spawn();if(s)strokes.push(s);att++}strokes.sort((a,b)=>b.depth-a.depth);for(const s of strokes){bctx.save();bctx.translate(s.x,s.y);bctx.rotate(s.angle);bctx.globalAlpha=s.alpha/255;bctx.fillStyle=`rgb(${s.col[0]},${s.col[1]},${s.col[2]})`;drawStrokePath(bctx,s.px,s.py);bctx.fill();bctx.restore()}bctx.globalAlpha=1;setCloudDisplay(buf,BLEED,CLOUD_W,CLOUD_H,'working',currentCloudScale)}
+function stepCloudTransition(){updateCloudTargetWithMicrogestures();if(facemeshPendingGeneration&&getCloudTransitionDistance()>FACEMESH_ENABLE_DISTANCE){facemeshThresholdWasExceededForGeneration=true}const cameraPanelState=getCameraPanelState();if(cameraPanelState){maybeFallbackMl5Input(cameraPanelState);if(shouldRunMl5Facemesh(cameraPanelState)){if(!cameraPanelState.ml5FacemeshReady&&!cameraPanelState.ml5FacemeshLoading&&!cameraPanelState.ml5FacemeshError&&cameraPanelState.mediaStream){void ensureMl5FacemeshReadyForPanel(cameraPanelState)}}else if(cameraPanelState.ml5FacemeshReady||cameraPanelState.ml5FacemeshLoading||cameraPanelState.ml5Predictions.length){resetMl5AnalysisForPanel(cameraPanelState)}syncMl5FacemeshRail()}const sp=transitionSpeed;let dh=cloudTarget.skyH-cloudCurrent.skyH;if(dh>180)dh-=360;if(dh<-180)dh+=360;cloudCurrent.skyH+=dh*sp;if(cloudCurrent.skyH<0)cloudCurrent.skyH+=360;if(cloudCurrent.skyH>=360)cloudCurrent.skyH-=360;cloudCurrent.skyS=lerp(cloudCurrent.skyS,cloudTarget.skyS,sp);cloudCurrent.skyV=lerp(cloudCurrent.skyV,cloudTarget.skyV,sp);cloudCurrent.turbulence=lerp(cloudCurrent.turbulence,cloudTarget.turbulence,sp);cloudCurrent.noiseOffset=lerp(cloudCurrent.noiseOffset,cloudTarget.noiseOffset,sp);cloudCurrent.noiseCeiling=lerp(cloudCurrent.noiseCeiling,cloudTarget.noiseCeiling,sp)}
+
+function dist6(a, b) { let s = 0; for (let i = 0; i < 6; i++) s += (a[i] - b[i]) ** 2; return Math.sqrt(s); }
+
+// ── FPS COUNTER ─────────────────────────────────────────────
+const cloudDebugLabelEl = document.getElementById('cloudDebugLabel');
+const cloudDetectedLabelEl = document.getElementById('cloudDetectedLabel');
+const cloudTransitionStatusEl = document.getElementById('cloudTransitionStatus');
+const cloudSunburstStatusEl = document.getElementById('cloudSunburstStatus');
+const cloudDebugHintEl = document.getElementById('cloudDebugHint');
+const cloudDebugBodyEl = document.getElementById('cloudDebugBody');
+let fpsFrames = 0, fpsLast = performance.now(), regenTime = 0, lastFrameAtMs = 0;
+let sunburstEnabled = true;
+let forceCloudRedraw = false;
+let editingCloudCurrentParamKey = null;
+function updateFps(now) {
+  if (lastFrameAtMs) {
+    recordPerfSample('frameDt', now - lastFrameAtMs, now);
+  }
+  lastFrameAtMs = now;
+  fpsFrames++;
+  if (now - fpsLast >= 1000) {
+    const fps = Math.round(fpsFrames * 1000 / (now - fpsLast));
+    cloudPerfSnapshot.fps = fps;
+    fpsFrames = 0;
+    fpsLast = now;
+  }
+}
+
+function updateLivePerformanceAges(now) {
+  const cameraPanelState = getCameraPanelState();
+  if (!cameraPanelState || !cameraPanelState.mediaStream) return;
+  if (cameraPanelState.lastDetectionCompletedAtMs > 0) {
+    recordPerfSample('detectorAge', now - cameraPanelState.lastDetectionCompletedAtMs, now);
+  }
+  if (cameraPanelState.ml5LastAcceptedPredictionAtMs > 0) {
+    recordPerfSample('ml5Age', now - cameraPanelState.ml5LastAcceptedPredictionAtMs, now);
+  }
+}
+
+function formatCloudParamValue(key, value) {
+  return key === 'turbulence' || key === 'noiseOffset' || key === 'noiseCeiling'
+    ? value.toFixed(3)
+    : value.toFixed(1);
+}
+
+function formatCloudParamLine(label, values) {
+  return `${label}: ${PARAM_KEYS
+    .map((key) => `${key} ${formatCloudParamValue(key, values[key])}`)
+    .join(' · ')}`;
+}
+
+function getCloudParamStep(key) {
+  if (key === 'skyH' || key === 'skyS' || key === 'skyV') return 1;
+  if (key === 'turbulence') return 0.05;
+  if (key === 'noiseOffset' || key === 'noiseCeiling') return 0.01;
+  return 0.01;
+}
+
+function adjustCloudCurrentParam(key, direction) {
+  const range = PARAM_RANGES[key];
+  if (!range || !Number.isFinite(direction) || direction === 0) return;
+  const step = getCloudParamStep(key) * direction;
+  cloudCurrent[key] = clamp(cloudCurrent[key] + step, range.min, range.max);
+}
+
+function setCloudCurrentParamValue(key, value) {
+  const range = PARAM_RANGES[key];
+  if (!range || !Number.isFinite(value)) return;
+  cloudCurrent[key] = clamp(value, range.min, range.max);
+}
+
+function updateCloudDebug() {
+  if (!cloudDebugBodyEl) return;
+  const winnerSnapshot = isWinnerSystemReady()
+    ? getLargestVisibleFaceAcrossPanels()
+    : { panelState: null, face: null, area: -1, secondArea: -1 };
+  const winnerPerson = getPersonForWinnerSnapshot(winnerSnapshot);
+  const targetValues = cloudTarget;
+  const transitionTargetPerson = activePerson || pendingTransitionPerson || lastTransitionedPerson;
+  const transitionTargetLabel = transitionTargetPerson ? formatPersonLabel(transitionTargetPerson) : 'none';
+  const winnerLabel = winnerPerson ? formatPersonLabel(winnerPerson) : 'none';
+  const transitionDistance = getCloudTransitionDistance();
+  const isSettled = isCloudTransitionSettled();
+
+  if (cloudDebugLabelEl) cloudDebugLabelEl.textContent = `Transition target ${transitionTargetLabel}`;
+  if (cloudDetectedLabelEl) cloudDetectedLabelEl.textContent = `Detected ${winnerLabel}`;
+  if (cloudTransitionStatusEl) {
+    cloudTransitionStatusEl.textContent = isSettled
+      ? `State stable · distance ${transitionDistance.toFixed(3)}`
+      : `State transitioning · distance ${transitionDistance.toFixed(3)}`;
+  }
+  if (cloudSunburstStatusEl) {
+    cloudSunburstStatusEl.textContent = `Sunburst ${sunburstEnabled ? 'on' : 'off'} · profile ${activePerfProfileName}`;
+  }
+  if (cloudDebugHintEl) {
+    const cameraPanelState = getCameraPanelState();
+    const ml5Mode = cameraPanelState?.ml5SourceMode || 'direct-video';
+    cloudDebugHintEl.textContent = `Mode ${ml5Mode} · cloud ${cloudDisplaySource} · fps ${cloudPerfSnapshot.fps.toFixed(0)} · regen ${cloudPerfSnapshot.regenP95.toFixed(0)}ms p95 · detect ${cloudPerfSnapshot.detectorAge.toFixed(0)}ms · ml5 ${cloudPerfSnapshot.ml5Age.toFixed(0)}ms`;
+  }
+  if (editingCloudCurrentParamKey) {
+    updateAnalysisDebugPanel();
+    return;
+  }
+  cloudDebugBodyEl.innerHTML = PARAM_KEYS.map((key) => `
+    <tr>
+      <td>${key}</td>
+      <td>
+        <div class="cloudCurrentControl">
+          <input
+            class="cloudCurrentInput"
+            data-cloud-current-input="${key}"
+            type="number"
+            inputmode="decimal"
+            min="${PARAM_RANGES[key].min}"
+            max="${PARAM_RANGES[key].max}"
+            step="${getCloudParamStep(key)}"
+            value="${formatCloudParamValue(key, cloudCurrent[key])}"
+          />
+        </div>
+      </td>
+      <td>${formatCloudParamValue(key, targetValues[key])}</td>
+    </tr>
+  `).join('');
+  updateAnalysisDebugPanel();
+}
+
+function updateHoldStillCue() {
+  if (!holdStillCueEl) return;
+  const pulse = sunburstEnabled ? getSunPulseIntensity() : 0;
+  const visiblePulse = clamp((pulse - 0.18) / 0.42, 0, 1);
+  holdStillCueEl.style.opacity = visiblePulse > 0 ? (visiblePulse * 0.92).toFixed(3) : '0';
+}
+
+// ── DEBUG UI ─────────────────────────────────────────────────
+const videoPanelsEl = document.querySelector('.videoPanels');
+const cloudDebugPanelEl = document.querySelector('.cloudDebugPanel');
+const analysisDebugPanelEl = document.querySelector('.analysisDebugPanel');
+const faceApiRailEl = document.querySelector('.faceApiRail');
+const holdStillCueEl = document.getElementById('holdStillCue');
+const faceApiStatusEl = document.getElementById('faceApiStatus');
+const faceApiDetailEl = document.getElementById('faceApiDetail');
+const ml5StatusEl = document.getElementById('ml5Status');
+const ml5DetailEl = document.getElementById('ml5Detail');
+const ml5FacemeshStatusEl = document.getElementById('ml5FacemeshStatus');
+const ml5FacemeshDetailEl = document.getElementById('ml5FacemeshDetail');
+const analysisDebugStatusEl = document.getElementById('analysisDebugStatus');
+const analysisWinnerLabelEl = document.getElementById('analysisWinnerLabel');
+const analysisSourceLabelEl = document.getElementById('analysisSourceLabel');
+const analysisDetailLabelEl = document.getElementById('analysisDetailLabel');
+const analysisDebugBodyEl = document.getElementById('analysisDebugBody');
+const analysisDebugToggleEl = document.getElementById('analysisDebugToggle');
+const videoPanelEls = Array.from(document.querySelectorAll('.videoPanel'));
+const dynamicNormalizedApi = window.DynamicNormalized || null;
+const ANALYSIS_METRIC_KEYS = ['mouthCenterShift', 'blinkAsymmetry', 'mouthWidth', 'mouthOpen'];
+const ANALYSIS_METRICS = dynamicNormalizedApi
+  ? ANALYSIS_METRIC_KEYS
+      .map((key) => dynamicNormalizedApi.DYNAMIC_METRICS.find((metric) => metric.key === key))
+      .filter(Boolean)
+  : [];
+const analysisStateByPersonId = new Map();
+let analysisShowValues = false;
+let debugCornerTapCount = 0;
+let debugCornerTapLastAtMs = 0;
+const ML5_VIDEO_NOT_READY_ERROR = 'The video element has not loaded data yet';
+const ML5_PREDICTION_STALE_MS = 2500;
+const ML5_RESTART_COOLDOWN_MS = 4000;
+const CAMERA_ML5_WARMUP_DELAY_MS = 300;
+const ML5_DIRECT_BOOT_TIMEOUT_MS = 4000;
+const ML5_DIRECT_FALLBACK_WINDOW_MS = 15000;
+const ML5_DIRECT_FALLBACK_RESTART_LIMIT = 2;
+const ANALYSIS_MATCH_OVERLAP_WEIGHT = 2.2;
+const ANALYSIS_MATCH_PAD_RATIO_FILE = 0.14;
+const ANALYSIS_MATCH_PAD_RATIO_CAMERA = 0.3;
+const ANALYSIS_MATCH_MAX_SCORE_WITHOUT_OVERLAP_FILE = 2.15;
+const ANALYSIS_MATCH_MAX_SCORE_WITHOUT_OVERLAP_CAMERA = 3.4;
+const ANALYSIS_MATCH_SINGLE_PREDICTION_MAX_SCORE_CAMERA = 4.2;
+const ANALYSIS_MATCH_SINGLE_PREDICTION_MAX_SCORE_FILE = 2.6;
+const ANALYSIS_MATCH_BEST_MARGIN_CAMERA = 0.7;
+const ANALYSIS_MATCH_BEST_MARGIN_FILE = 0.4;
+let faceApiReady = false;
+let faceApiLoading = null;
+const FACE_MODEL_URL = './models';
+const VIDEO_LOAD_DETECTION_DELAY_MS = 350;
+const SUN_PULSE_WINNER_HOLD_MS = 450;
+const SUN_PULSE_CLEAR_WINNER_RATIO = 1.22;
+const SUN_PULSE_CONFIRMED_GRACE_MS = 600;
+const CLOUD_NEW_WINNER_READY_MS = 3000;
+const DEBUG_TAP_CORNER_SIZE_PX = 140;
+const DEBUG_TAP_MULTI_CLICK_GAP_MS = 450;
+const DEBUG_TAP_COUNT_REQUIRED = 3;
+const RECENT_TRACK_MAX_AGE_FRAMES = 18;
+const RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES = 1;
+const RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.36;
+const GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.34;
+const GLOBAL_DESCRIPTOR_MATCH_MARGIN = 0.03;
+const RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.42;
+const RELAXED_DESCRIPTOR_MATCH_MARGIN = 0.015;
+const DESCRIPTOR_UPDATE_MAX_DISTANCE = 0.30;
+const MAX_DESCRIPTOR_SAMPLES = 6;
+const STALE_TRACK_MAX_AGE_FRAMES = 180;
+const PENDING_STALE_MAX_AGE_FRAMES = 24;
+const NEW_FACE_CONFIRM_FRAMES = 2;
+const DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE = 0.70;
+const DEFAULT_VIDEO_SCALE = 1.00;
+const CAMERA_RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES = 4;
+const CAMERA_RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.34;
+const CAMERA_GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.32;
+const CAMERA_GLOBAL_DESCRIPTOR_MATCH_MARGIN = 0.03;
+const CAMERA_RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE = 0.38;
+const CAMERA_RELAXED_DESCRIPTOR_MATCH_MARGIN = 0.02;
+const CAMERA_DESCRIPTOR_UPDATE_MAX_DISTANCE = 0.30;
+const CAMERA_NEW_FACE_CONFIRM_FRAMES = 4;
+const CAMERA_PRIMARY_REACQUIRE_MAX_DISTANCE = 0.48;
+const CAMERA_PRIMARY_REACQUIRE_MAX_AGE_MS = 15000;
+const CAMERA_MIN_DETECTION_SCORE = 0.46;
+const CAMERA_MAX_KNOWN_REUSE_DISTANCE = 0.48;
+const CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE = 0.60;
+const CAMERA_PROCESSING_CROP_ASPECT = 16 / 9;
+const CAMERA_PROCESSING_ZOOM = 1.08;
+const FACEMESH_ENABLE_DISTANCE = 0.5;
+const FILE_MIN_DETECTION_SCORE = 0.52;
+const FILE_MAX_KNOWN_REUSE_DISTANCE = 0.60;
+const FILE_MAX_NEW_FACE_KNOWN_DISTANCE = 0.68;
+const panelStates = videoPanelEls.map(createPanelState);
+
+if (cloudDebugBodyEl) {
+  cloudDebugBodyEl.addEventListener('focusin', (event) => {
+    const input = event.target.closest('[data-cloud-current-input]');
+    if (!input) return;
+    editingCloudCurrentParamKey = input.dataset.cloudCurrentInput;
+  });
+  cloudDebugBodyEl.addEventListener('focusout', (event) => {
+    const input = event.target.closest('[data-cloud-current-input]');
+    if (!input) return;
+    setCloudCurrentParamValue(input.dataset.cloudCurrentInput, Number(input.value));
+    editingCloudCurrentParamKey = null;
+    updateCloudDebug();
+  });
+  cloudDebugBodyEl.addEventListener('input', (event) => {
+    const input = event.target.closest('[data-cloud-current-input]');
+    if (!input) return;
+    setCloudCurrentParamValue(input.dataset.cloudCurrentInput, Number(input.value));
+  });
+  cloudDebugBodyEl.addEventListener('change', (event) => {
+    const input = event.target.closest('[data-cloud-current-input]');
+    if (!input) return;
+    setCloudCurrentParamValue(input.dataset.cloudCurrentInput, Number(input.value));
+    updateCloudDebug();
+  });
+}
+
+if (analysisDebugToggleEl) {
+  analysisDebugToggleEl.addEventListener('click', () => {
+    analysisShowValues = !analysisShowValues;
+    updateAnalysisDebugPanel();
+  });
+}
+
+function updateFaceApiRail(statusText, detailText) {
+  if (faceApiStatusEl) faceApiStatusEl.textContent = statusText;
+  if (faceApiDetailEl) faceApiDetailEl.textContent = detailText;
+}
+
+function hideFaceApiRail() {
+  if (faceApiRailEl) faceApiRailEl.classList.add('isHidden');
+}
+
+function updateMl5Rail(statusText, detailText) {
+  if (ml5StatusEl) ml5StatusEl.textContent = statusText;
+  if (ml5DetailEl) ml5DetailEl.textContent = detailText;
+}
+
+function updateMl5FacemeshRail(statusText, detailText) {
+  if (ml5FacemeshStatusEl) ml5FacemeshStatusEl.textContent = statusText;
+  if (ml5FacemeshDetailEl) ml5FacemeshDetailEl.textContent = detailText;
+}
+
+function updateStartupRailStatus({
+  faceApiDetail,
+  ml5Detail,
+  ml5FacemeshDetail,
+} = {}) {
+  if (typeof faceApiDetail === 'string') {
+    updateFaceApiRail('face-api.js ready', faceApiDetail);
+  }
+  if (typeof ml5Detail === 'string') {
+    updateMl5Rail('ml5 ready', ml5Detail);
+  }
+  if (typeof ml5FacemeshDetail === 'string') {
+    updateMl5FacemeshRail('ml5 facemesh loading', ml5FacemeshDetail);
+  }
+  refreshStatusRailVisibility();
+}
+
+function refreshStatusRailVisibility() {
+  if (!faceApiRailEl) return;
+  const coreScriptsReady = Boolean(
+    faceApiReady &&
+    window.ml5ScriptStatus === 'ready' &&
+    window.faceApiScriptStatus === 'ready'
+  );
+
+  if (coreScriptsReady) {
+    hideFaceApiRail();
+    return;
+  }
+
+  faceApiRailEl.classList.remove('isHidden');
+}
+
+function syncFaceApiRailWithScriptStatus() {
+  if (window.faceApiScriptStatus === 'error') {
+    updateFaceApiRail('face-api.js error', 'Unable to load ./face-api.min.js');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (window.faceApiScriptStatus === 'ready') {
+    updateFaceApiRail('face-api.js ready', 'Local script loaded. Models will load next.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  updateFaceApiRail('face-api.js loading', 'Loading local script...');
+  refreshStatusRailVisibility();
+}
+
+function syncMl5RailWithScriptStatus() {
+  if (window.ml5ScriptStatus === 'error') {
+    updateMl5Rail('ml5 error', window.ml5ScriptDetail || 'Unable to load ./ml5.min.js');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (window.ml5ScriptStatus === 'ready') {
+    updateMl5Rail('ml5 ready', window.ml5ScriptDetail || 'Local script loaded.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  updateMl5Rail('ml5 loading', window.ml5ScriptDetail || 'Loading local script...');
+  refreshStatusRailVisibility();
+}
+
+function getCameraPanelState() {
+  return panelStates.find((panelState) => panelState.sourceType === 'camera') || null;
+}
+
+function isWinnerSystemReady() {
+  return Boolean(faceApiReady);
+}
+
+function syncMl5FacemeshRail() {
+  const cameraPanelState = getCameraPanelState();
+  const sourceMode = cameraPanelState?.ml5SourceMode || 'direct-video';
+  if (!cameraPanelState) {
+    updateMl5FacemeshRail('ml5 facemesh unavailable', 'No live video panel is configured.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (window.ml5ScriptStatus === 'error') {
+    updateMl5FacemeshRail('ml5 facemesh blocked', window.ml5ScriptDetail || 'ml5 script is unavailable.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (!shouldRunMl5Facemesh(cameraPanelState)) {
+    updateMl5FacemeshRail(
+      'ml5 facemesh gated',
+      `Waiting for a newly generated cloud and distance <= ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} before starting facemesh.`
+    );
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (cameraPanelState.ml5FacemeshError) {
+    updateMl5FacemeshRail(
+      'ml5 facemesh error',
+      cameraPanelState.ml5FacemeshError.message || 'Unable to start facemesh for the live video panel.'
+    );
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (cameraPanelState.ml5FacemeshReady) {
+    const lastUpdate = cameraPanelState.ml5LastPredictionAtMs
+      ? ` Last update ${Math.max(0, performance.now() - cameraPanelState.ml5LastPredictionAtMs).toFixed(0)}ms ago.`
+      : '';
+    updateMl5FacemeshRail('ml5 facemesh ready', `Live video panel facemesh is running via ${sourceMode}.${lastUpdate}`);
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (cameraPanelState.ml5FacemeshLoading) {
+    updateMl5FacemeshRail('ml5 facemesh loading', `Booting facemesh for the live video panel via ${sourceMode}.`);
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (!cameraPanelState.mediaStream) {
+    updateMl5FacemeshRail('ml5 facemesh idle', 'Waiting for the live video panel camera stream.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  if (!isVideoReadyForAnalysis(cameraPanelState.loadedVideoEl)) {
+    updateMl5FacemeshRail('ml5 facemesh waiting', 'Waiting for the live video panel video to become ready.');
+    refreshStatusRailVisibility();
+    return;
+  }
+  updateMl5FacemeshRail('ml5 facemesh pending', `Live video panel is ready to start facemesh via ${sourceMode}.`);
+  refreshStatusRailVisibility();
+}
+
+syncFaceApiRailWithScriptStatus();
+syncMl5RailWithScriptStatus();
+syncMl5FacemeshRail();
+
+function logMl5ScriptStatus() {
+  if (window.ml5ScriptStatus === 'error') {
+    console.error('[ml5] Unable to load ./ml5.min.js');
+    return;
+  }
+  if (window.ml5ScriptStatus === 'ready') {
+    if (window.ml5) {
+      console.info('[ml5] Local script loaded and ready.');
+      return;
+    }
+    console.warn('[ml5] Script loaded, but window.ml5 is unavailable.');
+    return;
+  }
+  console.info('[ml5] Loading local script...');
+}
+
+logMl5ScriptStatus();
+
+if (!dynamicNormalizedApi) {
+  console.warn('[analysis] DynamicNormalized is unavailable.');
+}
+
+function formatMetricValue(value, { signed = false } = {}) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  return signed ? safeValue.toFixed(3).replace(/^(-?)/, '$1') : safeValue.toFixed(3);
+}
+
+function formatSignedMetricValue(value) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  return `${safeValue >= 0 ? '+' : ''}${safeValue.toFixed(3)}`;
+}
+
+function formatMetricDisplayValue(metric, value) {
+  return metric && metric.signed ? formatSignedMetricValue(value) : formatMetricValue(value);
+}
+
+function getAnalysisEmptyStateHtml(message) {
+  return `<div class="analysisEmptyState">${message}</div>`;
+}
+
+function getMetricMeterPercent(metric, value) {
+  const safeValue = Number.isFinite(value) ? value : 0;
+  if (metric && metric.signed) {
+    return clamp((safeValue + 1) * 50, 0, 100);
+  }
+  return clamp(safeValue * 100, 0, 100);
+}
+
+function renderAnalysisMeterRows(metrics, normalizedMetrics) {
+  return `
+    <div class="analysisMeterList">
+      ${metrics.map((metric) => {
+        const normalizedValue = normalizedMetrics[metric.key];
+        const percent = getMetricMeterPercent(metric, normalizedValue);
+        const [r, g, b] = metric.accent || [255, 255, 255];
+        return `
+          <div class="analysisMeterRow">
+            <div class="analysisMeterHeader">
+              <div class="analysisMeterLabel">
+                <span class="analysisMetricDot" style="background: rgb(${r}, ${g}, ${b});"></span>
+                <div>
+                  <div>${metric.label}</div>
+                  <span class="analysisMetricKey">${metric.key}</span>
+                </div>
+              </div>
+              <div class="analysisMeterValue">${formatMetricDisplayValue(metric, normalizedValue)}</div>
+            </div>
+            <div class="analysisMeterTrack">
+              <div class="analysisMeterFill" style="width: ${percent}%; background: rgb(${r}, ${g}, ${b});"></div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+function renderAnalysisValueRows(metrics, rawMetrics, normalizedMetrics, dynamicState) {
+  return `
+    <table class="analysisDebugTable">
+      <thead>
+        <tr>
+          <th>Metric</th>
+          <th>Raw</th>
+          <th>Dyn</th>
+          <th>State</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${metrics.map((metric) => {
+          const state = dynamicState[metric.key];
+          const rawValue = rawMetrics[metric.key];
+          const normalizedValue = normalizedMetrics[metric.key];
+          const [r, g, b] = metric.accent || [255, 255, 255];
+          return `
+            <tr>
+              <td>
+                <div class="analysisMetricName">
+                  <span class="analysisMetricDot" style="background: rgb(${r}, ${g}, ${b});"></span>
+                  <div>
+                    <div>${metric.label}</div>
+                    <span class="analysisMetricKey">${metric.key}</span>
+                  </div>
+                </div>
+              </td>
+              <td>${formatMetricDisplayValue(metric, rawValue)}</td>
+              <td>${formatMetricDisplayValue(metric, normalizedValue)}</td>
+              <td class="analysisMetricState">b ${formatMetricValue(state?.baseline ?? 0, { signed: Boolean(metric.signed) })}<br>r ${formatMetricValue(state?.range ?? 0)}</td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function getAnalysisStateForPerson(personId) {
+  if (!dynamicNormalizedApi) return null;
+  if (!analysisStateByPersonId.has(personId)) {
+    analysisStateByPersonId.set(personId, {
+      dynamicState: dynamicNormalizedApi.createDynamicState(),
+      centerStore: {},
+      rawMetrics: dynamicNormalizedApi.getEmptyDynamicMetrics(),
+      normalizedMetrics: dynamicNormalizedApi.getEmptyDynamicMetrics(),
+      lastPredictionToken: null,
+    });
+  }
+  return analysisStateByPersonId.get(personId);
+}
+
+function resetMl5AnalysisForPanel(panelState, { clearError = true, markRestart = false } = {}) {
+  if (!panelState) return;
+  panelState.ml5SessionId += 1;
+  panelState.ml5FacemeshReady = false;
+  panelState.ml5FacemeshLoading = null;
+  panelState.ml5Facemesh = null;
+  if (clearError) {
+    panelState.ml5FacemeshError = null;
+  }
+  panelState.ml5Predictions = [];
+  panelState.ml5PredictionVersion += 1;
+  panelState.ml5LastPredictionAtMs = 0;
+  panelState.ml5LastAcceptedPredictionAtMs = 0;
+  panelState.ml5BootDeadlineAtMs = 0;
+  if (markRestart) {
+    panelState.ml5LastRestartAtMs = performance.now();
+    if (panelState.ml5SourceMode === 'direct-video' && !panelState.ml5ForceClonedVideo) {
+      const now = panelState.ml5LastRestartAtMs;
+      if (!panelState.ml5DirectRestartWindowStartedAtMs || now - panelState.ml5DirectRestartWindowStartedAtMs > ML5_DIRECT_FALLBACK_WINDOW_MS) {
+        panelState.ml5DirectRestartWindowStartedAtMs = now;
+        panelState.ml5DirectRestartCount = 1;
+      } else {
+        panelState.ml5DirectRestartCount += 1;
+      }
+      if (panelState.ml5DirectRestartCount >= ML5_DIRECT_FALLBACK_RESTART_LIMIT) {
+        panelState.ml5ForceClonedVideo = true;
+        panelState.ml5SourceMode = 'cloned-video';
+      }
+    }
+  }
+  syncMl5FacemeshRail();
+}
+
+function shouldRestartMl5Analysis(panelState, now = performance.now()) {
+  if (!panelState) return false;
+  if (!shouldRunMl5Facemesh(panelState)) return false;
+  if (!panelState.ml5FacemeshReady) return false;
+  if (panelState.ml5FacemeshLoading) return false;
+  if (!isVideoReadyForAnalysis(panelState.loadedVideoEl)) return false;
+  if (panelState.loadedVideoEl.paused || panelState.loadedVideoEl.ended) return false;
+  if (now - panelState.ml5LastRestartAtMs < ML5_RESTART_COOLDOWN_MS) return false;
+  return now - panelState.ml5LastPredictionAtMs > ML5_PREDICTION_STALE_MS;
+}
+
+function getPredictionMeshPoints(prediction) {
+  if (!prediction) return null;
+  return prediction.scaledMesh || prediction.mesh || null;
+}
+
+function isVideoReadyForAnalysis(videoEl) {
+  return Boolean(
+    videoEl &&
+    videoEl.readyState >= 2 &&
+    videoEl.videoWidth > 0 &&
+    videoEl.videoHeight > 0
+  );
+}
+
+function waitForVideoReady(videoEl, timeoutMs = 12000) {
+  if (isVideoReadyForAnalysis(videoEl)) {
+    return Promise.resolve(videoEl);
+  }
+
+  return new Promise((resolve, reject) => {
+    let timeoutId = 0;
+
+    const cleanup = () => {
+      videoEl.removeEventListener('loadeddata', handleReady);
+      videoEl.removeEventListener('canplay', handleReady);
+      videoEl.removeEventListener('playing', handleReady);
+      if (timeoutId) {
+        window.clearTimeout(timeoutId);
+      }
+    };
+
+    const handleReady = () => {
+      if (!isVideoReadyForAnalysis(videoEl)) return;
+      cleanup();
+      resolve(videoEl);
+    };
+
+    timeoutId = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('Video did not become ready for analysis in time.'));
+    }, timeoutMs);
+
+    videoEl.addEventListener('loadeddata', handleReady, { once: true });
+    videoEl.addEventListener('canplay', handleReady, { once: true });
+    videoEl.addEventListener('playing', handleReady, { once: true });
+  });
+}
+
+function getMeshBox(points, scale = 1) {
+  if (!points || !points.length) return null;
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+
+  for (const point of points) {
+    const x = (point[0] || 0) * scale;
+    const y = (point[1] || 0) * scale;
+    if (x < minX) minX = x;
+    if (x > maxX) maxX = x;
+    if (y < minY) minY = y;
+    if (y > maxY) maxY = y;
+  }
+
+  if (!Number.isFinite(minX) || !Number.isFinite(minY) || !Number.isFinite(maxX) || !Number.isFinite(maxY)) {
+    return null;
+  }
+
+  return {
+    x: minX,
+    y: minY,
+    width: Math.max(1, maxX - minX),
+    height: Math.max(1, maxY - minY),
+  };
+}
+
+function getBoxIntersectionArea(a, b) {
+  if (!a || !b) return 0;
+  const left = Math.max(a.x, b.x);
+  const top = Math.max(a.y, b.y);
+  const right = Math.min(a.x + a.width, b.x + b.width);
+  const bottom = Math.min(a.y + a.height, b.y + b.height);
+  return Math.max(0, right - left) * Math.max(0, bottom - top);
+}
+
+function expandBox(box, paddingRatio) {
+  if (!box) return null;
+  const padX = box.width * paddingRatio;
+  const padY = box.height * paddingRatio;
+  return {
+    x: box.x - padX,
+    y: box.y - padY,
+    width: box.width + padX * 2,
+    height: box.height + padY * 2,
+  };
+}
+
+function getBestPredictionMatch(panelState, face) {
+  if (!shouldRunMl5Facemesh(panelState)) return null;
+  if (!panelState || !face || !panelState.ml5Predictions.length) return null;
+
+  let bestMatch = null;
+  let bestScore = Infinity;
+  let secondBestScore = Infinity;
+  const isCameraPanel = panelState.sourceType === 'camera';
+  const paddedFaceBox = expandBox(
+    face.box,
+    isCameraPanel ? ANALYSIS_MATCH_PAD_RATIO_CAMERA : ANALYSIS_MATCH_PAD_RATIO_FILE
+  );
+
+  for (const prediction of panelState.ml5Predictions) {
+    const points = getPredictionMeshPoints(prediction);
+    const meshBox = getMeshBox(points, panelState.videoScale || 1);
+    if (!meshBox) continue;
+
+    const paddedMeshBox = expandBox(
+      meshBox,
+      isCameraPanel ? ANALYSIS_MATCH_PAD_RATIO_CAMERA : ANALYSIS_MATCH_PAD_RATIO_FILE
+    );
+    const intersectionArea = getBoxIntersectionArea(paddedFaceBox, paddedMeshBox);
+    const minArea = Math.max(1, Math.min(getFaceArea(paddedFaceBox), getFaceArea(paddedMeshBox)));
+    const overlapRatio = intersectionArea / minArea;
+    const spatialScore = getSpatialMatchScore(paddedFaceBox, paddedMeshBox);
+    const score = spatialScore - overlapRatio * ANALYSIS_MATCH_OVERLAP_WEIGHT;
+
+    if (score < bestScore) {
+      secondBestScore = bestScore;
+      bestScore = score;
+      bestMatch = { prediction, points, meshBox, paddedMeshBox, overlapRatio, score };
+    } else if (score < secondBestScore) {
+      secondBestScore = score;
+    }
+  }
+
+  if (!bestMatch) return null;
+  if (isCameraPanel) return bestMatch;
+  const predictionCount = panelState.ml5Predictions.length;
+  const maxScoreWithoutOverlap = isCameraPanel
+    ? ANALYSIS_MATCH_MAX_SCORE_WITHOUT_OVERLAP_CAMERA
+    : ANALYSIS_MATCH_MAX_SCORE_WITHOUT_OVERLAP_FILE;
+  if (bestMatch.overlapRatio > 0) return bestMatch;
+
+  const singlePredictionMaxScore = isCameraPanel
+    ? ANALYSIS_MATCH_SINGLE_PREDICTION_MAX_SCORE_CAMERA
+    : ANALYSIS_MATCH_SINGLE_PREDICTION_MAX_SCORE_FILE;
+  if (predictionCount === 1 && bestMatch.score <= singlePredictionMaxScore) return bestMatch;
+
+  const bestMargin = Number.isFinite(secondBestScore) ? secondBestScore - bestMatch.score : Infinity;
+  const requiredBestMargin = isCameraPanel
+    ? ANALYSIS_MATCH_BEST_MARGIN_CAMERA
+    : ANALYSIS_MATCH_BEST_MARGIN_FILE;
+  if (bestMatch.score <= maxScoreWithoutOverlap && bestMargin >= requiredBestMargin) return bestMatch;
+
+  if (bestMatch.score > maxScoreWithoutOverlap) return null;
+  return bestMatch;
+}
+
+function getMl5InputVideoForPanel(panelState) {
+  if (!panelState) return null;
+  if (panelState.sourceType !== 'camera') return panelState.loadedVideoEl;
+  return panelState.ml5SourceMode === 'cloned-video'
+    ? panelState.ml5InputVideoEl
+    : panelState.loadedVideoEl;
+}
+
+function ensureMl5FallbackVideo(panelState) {
+  if (!panelState || panelState.ml5InputVideoEl) return panelState?.ml5InputVideoEl || null;
+  const videoEl = document.createElement('video');
+  videoEl.muted = true;
+  videoEl.defaultMuted = true;
+  videoEl.playsInline = true;
+  videoEl.setAttribute('playsinline', '');
+  videoEl.setAttribute('aria-hidden', 'true');
+  videoEl.tabIndex = -1;
+  panelState.ml5InputVideoEl = videoEl;
+  return videoEl;
+}
+
+async function attachMl5SourceForPanel(panelState) {
+  if (!panelState || panelState.sourceType !== 'camera') return getMl5InputVideoForPanel(panelState);
+  if (panelState.ml5SourceMode !== 'cloned-video') {
+    return panelState.loadedVideoEl;
+  }
+  const videoTrack = panelState.mediaStream?.getVideoTracks?.()[0];
+  const ml5VideoEl = ensureMl5FallbackVideo(panelState);
+  if (!videoTrack || !ml5VideoEl) {
+    throw new Error('Camera analysis input could not be created');
+  }
+  if (!panelState.ml5InputTrack || panelState.ml5InputTrack.readyState === 'ended') {
+    panelState.ml5InputTrack = videoTrack.clone();
+    panelState.ml5InputStream = new MediaStream([panelState.ml5InputTrack]);
+    ml5VideoEl.srcObject = panelState.ml5InputStream;
+  }
+  await ml5VideoEl.play();
+  await waitForVideoReady(ml5VideoEl);
+  return ml5VideoEl;
+}
+
+function teardownMl5FallbackSource(panelState) {
+  if (!panelState) return;
+  if (panelState.ml5InputTrack) {
+    panelState.ml5InputTrack.stop();
+    panelState.ml5InputTrack = null;
+  }
+  if (panelState.ml5InputStream) {
+    for (const track of panelState.ml5InputStream.getTracks()) track.stop();
+    panelState.ml5InputStream = null;
+  }
+  if (panelState.ml5InputVideoEl) {
+    panelState.ml5InputVideoEl.pause();
+    panelState.ml5InputVideoEl.srcObject = null;
+    panelState.ml5InputVideoEl.removeAttribute('src');
+    panelState.ml5InputVideoEl.load();
+  }
+}
+
+function maybeFallbackMl5Input(panelState, now = performance.now()) {
+  if (!panelState || panelState.sourceType !== 'camera') return;
+  if (panelState.ml5SourceMode !== 'direct-video') return;
+  if (panelState.ml5ForceClonedVideo) return;
+  if (!panelState.ml5BootDeadlineAtMs || now < panelState.ml5BootDeadlineAtMs) return;
+  if (panelState.ml5LastAcceptedPredictionAtMs > 0) return;
+  panelState.ml5ForceClonedVideo = true;
+  panelState.ml5SourceMode = 'cloned-video';
+  panelState.ml5DirectRestartCount = 0;
+  panelState.ml5BootDeadlineAtMs = 0;
+  resetMl5AnalysisForPanel(panelState);
+  void ensureMl5FacemeshReadyForPanel(panelState);
+}
+
+function shouldRunMl5Facemesh(panelState) {
+  if (!panelState || panelState.sourceType !== 'camera') return true;
+  if (!facemeshPendingGeneration) return false;
+  if (panelState.ml5FacemeshReady || panelState.ml5FacemeshLoading || panelState.ml5Predictions.length) {
+    return true;
+  }
+  return facemeshThresholdWasExceededForGeneration && getCloudTransitionDistance() <= FACEMESH_ENABLE_DISTANCE;
+}
+
+async function ensureMl5FacemeshReadyForPanel(panelState) {
+  if (!panelState || panelState.ml5FacemeshReady) return panelState.ml5Facemesh;
+  if (panelState.ml5FacemeshLoading) return panelState.ml5FacemeshLoading;
+  if (!window.ml5) {
+    const detail = window.ml5ScriptDetail || 'ml5 is not available';
+    const error = new Error(detail);
+    panelState.ml5FacemeshError = error;
+    updateAnalysisDebugPanel();
+    syncMl5FacemeshRail();
+    return Promise.resolve(null);
+  }
+  let ml5InputVideoEl = getMl5InputVideoForPanel(panelState);
+  if (panelState.sourceType === 'camera') {
+    ml5InputVideoEl = await attachMl5SourceForPanel(panelState);
+  }
+  if (!ml5InputVideoEl) {
+    const error = new Error('ml5 input video is unavailable');
+    panelState.ml5FacemeshError = error;
+    updateAnalysisDebugPanel();
+    syncMl5FacemeshRail();
+    return Promise.resolve(null);
+  }
+  if (!isVideoReadyForAnalysis(ml5InputVideoEl)) {
+    await waitForVideoReady(ml5InputVideoEl);
+  }
+
+  const sessionId = panelState.ml5SessionId;
+  const bootStartedAtMs = performance.now();
+  if (panelState.ml5SourceMode === 'direct-video') {
+    panelState.ml5BootDeadlineAtMs = bootStartedAtMs + ML5_DIRECT_BOOT_TIMEOUT_MS;
+  }
+
+  panelState.ml5FacemeshLoading = new Promise((resolve, reject) => {
+    let resolved = false;
+    try {
+      const facemesh = ml5.facemesh(
+        ml5InputVideoEl,
+        {
+          maxFaces: panelState.sourceType === 'camera' ? 1 : 5,
+          flipHorizontal: false,
+        },
+        () => {
+          if (panelState.ml5SessionId !== sessionId) {
+            resolve(null);
+            return;
+          }
+          panelState.ml5FacemeshReady = true;
+          panelState.ml5FacemeshError = null;
+          resolved = true;
+          resolve(facemesh);
+          syncMl5FacemeshRail();
+          updateAnalysisDebugPanel();
+        }
+      );
+
+      panelState.ml5Facemesh = facemesh;
+      if (facemesh && typeof facemesh.on === 'function') {
+        facemesh.on('predict', (results) => {
+          if (panelState.ml5SessionId !== sessionId) return;
+          if (!isVideoReadyForAnalysis(ml5InputVideoEl)) return;
+          const now = performance.now();
+          if (now - panelState.ml5LastAcceptedPredictionAtMs < activePerfProfile.ml5MinPredictionIntervalMs) {
+            return;
+          }
+          panelState.ml5LastPredictionAtMs = now;
+          panelState.ml5LastAcceptedPredictionAtMs = now;
+          panelState.ml5BootDeadlineAtMs = 0;
+          panelState.ml5Predictions = Array.isArray(results) ? results : [];
+          panelState.ml5PredictionVersion += 1;
+          syncMl5FacemeshRail();
+          updateAnalysisDebugPanel();
+        });
+      }
+    } catch (error) {
+      panelState.ml5FacemeshError = error;
+      syncMl5FacemeshRail();
+      reject(error);
+    }
+
+    window.setTimeout(() => {
+      if (resolved) return;
+      if (panelState.ml5SessionId !== sessionId) return;
+      if (panelState.ml5FacemeshReady) return;
+      if (panelState.ml5FacemeshError) return;
+      const error = new Error('ml5 facemesh load timed out');
+      panelState.ml5FacemeshError = error;
+      syncMl5FacemeshRail();
+      reject(error);
+    }, 12000);
+  })
+    .catch((error) => {
+      panelState.ml5FacemeshError = error;
+      console.error('[analysis] Unable to start ml5 facemesh for panel', panelState.index + 1, error);
+      return null;
+    })
+    .finally(() => {
+      panelState.ml5FacemeshLoading = null;
+      syncMl5FacemeshRail();
+      updateAnalysisDebugPanel();
+    });
+
+  syncMl5FacemeshRail();
+  return panelState.ml5FacemeshLoading;
+}
+
+function getWinnerAnalysisSnapshot() {
+  const now = performance.now();
+
+  if (!dynamicNormalizedApi) {
+    return {
+      status: 'Unavailable',
+      winnerLabel: 'Winner none',
+      sourceLabel: 'Source panel none',
+      detailLabel: 'dynamic normalized.js did not load.',
+      bodyHtml: getAnalysisEmptyStateHtml('DynamicNormalized is unavailable.'),
+    };
+  }
+
+  if (!isWinnerSystemReady()) {
+    return {
+      status: 'Loading',
+      winnerLabel: 'Winner none',
+      sourceLabel: 'Source panel none',
+      detailLabel: 'Waiting for face detection to finish loading.',
+      bodyHtml: getAnalysisEmptyStateHtml('Waiting for face detection to finish loading...'),
+    };
+  }
+
+  const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
+  const winnerPerson = getPersonForWinnerSnapshot(winnerSnapshot);
+
+  if (!winnerSnapshot.face || !winnerSnapshot.panelState || !winnerPerson) {
+    return {
+      status: 'Waiting',
+      winnerLabel: 'Winner none',
+      sourceLabel: 'Source panel none',
+      detailLabel: 'Waiting for the current winner face.',
+      bodyHtml: getAnalysisEmptyStateHtml('No winner face is currently available.'),
+    };
+  }
+
+  const panelState = winnerSnapshot.panelState;
+  const winnerLabel = `Winner ${formatPersonLabel(winnerPerson)}`;
+  const sourceLabel = `Source panel ${panelState.index + 1}`;
+
+  if (panelState.loadedVideoEl.readyState < 2) {
+    return {
+      status: 'Waiting',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: 'The winner panel video is not ready yet.',
+      bodyHtml: getAnalysisEmptyStateHtml('Winner panel video is not ready.'),
+    };
+  }
+
+  if (!panelState.ml5FacemeshReady && !panelState.ml5FacemeshError) {
+    if (shouldRunMl5Facemesh(panelState)) {
+      void ensureMl5FacemeshReadyForPanel(panelState);
+    } else {
+      return {
+        status: 'Waiting',
+        winnerLabel,
+        sourceLabel,
+        detailLabel: `Facemesh is paused until a newly generated cloud is within ${FACEMESH_ENABLE_DISTANCE.toFixed(1)} of target.`,
+        bodyHtml: getAnalysisEmptyStateHtml('Waiting to enable facemesh until the cloud is close enough after a new generation.'),
+      };
+    }
+    return {
+      status: 'Loading',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: 'Loading ml5 facemesh for the winner panel.',
+      bodyHtml: getAnalysisEmptyStateHtml('Loading ml5 facemesh...'),
+    };
+  }
+
+  if (shouldRestartMl5Analysis(panelState, now)) {
+    resetMl5AnalysisForPanel(panelState, { markRestart: true });
+    void ensureMl5FacemeshReadyForPanel(panelState);
+    return {
+      status: 'Restarting',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: 'Facemesh updates stalled, restarting analysis for this panel.',
+      bodyHtml: getAnalysisEmptyStateHtml('Restarting facemesh after stalled predictions.'),
+    };
+  }
+
+  if (panelState.ml5FacemeshError) {
+    return {
+      status: 'Error',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: panelState.ml5FacemeshError.message || 'ml5 facemesh failed to load.',
+      bodyHtml: getAnalysisEmptyStateHtml('ml5 facemesh failed to load.'),
+    };
+  }
+
+  const predictionMatch = getBestPredictionMatch(panelState, winnerSnapshot.face);
+  if (!predictionMatch || !predictionMatch.points) {
+    return {
+      status: 'Waiting',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: panelState.ml5LastPredictionAtMs
+        ? `Waiting for a face mesh that matches the winner face. Last facemesh update ${(now - panelState.ml5LastPredictionAtMs).toFixed(0)}ms ago.`
+        : 'Waiting for a face mesh that matches the winner face.',
+      bodyHtml: getAnalysisEmptyStateHtml('No matching face mesh for the winner yet.'),
+    };
+  }
+
+  const analysisState = getAnalysisStateForPerson(winnerPerson.id);
+  if (!analysisState) {
+    return {
+      status: 'Unavailable',
+      winnerLabel,
+      sourceLabel,
+      detailLabel: 'Dynamic analysis state could not be created.',
+      bodyHtml: getAnalysisEmptyStateHtml('Unable to create dynamic analysis state.'),
+    };
+  }
+
+  const predictionToken = `${panelState.index}:${panelState.ml5PredictionVersion}:${winnerPerson.id}`;
+  if (analysisState.lastPredictionToken !== predictionToken) {
+    const rawMetrics = dynamicNormalizedApi.getDynamicFaceMetrics(
+      predictionMatch.points,
+      winnerPerson.id,
+      analysisState.centerStore
+    );
+    const normalizedMetrics = {};
+
+    for (const metric of ANALYSIS_METRICS) {
+      normalizedMetrics[metric.key] = dynamicNormalizedApi.updateDynamicMetric(
+        metric.key,
+        rawMetrics[metric.key],
+        analysisState.dynamicState,
+        Boolean(metric.signed)
+      );
+    }
+
+    analysisState.rawMetrics = rawMetrics;
+    analysisState.normalizedMetrics = normalizedMetrics;
+    analysisState.lastPredictionToken = predictionToken;
+  }
+
+  return {
+    status: 'Live',
+    winnerLabel,
+    sourceLabel,
+    detailLabel: `Tracking the current winner face from panel ${panelState.index + 1}. Last facemesh update ${(now - panelState.ml5LastPredictionAtMs).toFixed(0)}ms ago.`,
+    bodyHtml: analysisShowValues
+      ? renderAnalysisValueRows(
+          ANALYSIS_METRICS,
+          analysisState.rawMetrics,
+          analysisState.normalizedMetrics,
+          analysisState.dynamicState
+        )
+      : renderAnalysisMeterRows(ANALYSIS_METRICS, analysisState.normalizedMetrics),
+  };
+}
+
+function updateAnalysisDebugPanel() {
+  if (!analysisDebugBodyEl || !analysisDebugStatusEl || !analysisWinnerLabelEl || !analysisSourceLabelEl || !analysisDetailLabelEl) {
+    return;
+  }
+
+  const snapshot = getWinnerAnalysisSnapshot();
+  analysisDebugStatusEl.textContent = snapshot.status;
+  analysisWinnerLabelEl.textContent = snapshot.winnerLabel;
+  analysisSourceLabelEl.textContent = snapshot.sourceLabel;
+  analysisDetailLabelEl.textContent = snapshot.detailLabel;
+  if (analysisDebugToggleEl) {
+    analysisDebugToggleEl.textContent = analysisShowValues ? 'Show Meters' : 'Show Values';
+  }
+  analysisDebugBodyEl.innerHTML = snapshot.bodyHtml;
+}
+
+function createPanelState(panelEl, index) {
+  const faceOverlayEl = panelEl.querySelector('.faceOverlay');
+  const sourceType = panelEl.dataset.sourceType || 'file';
+  const state = {
+    index,
+    panelEl,
+    sourceType,
+    videoFileInputEl: panelEl.querySelector('.videoFileInput'),
+    cameraToggleButtonEl: panelEl.querySelector('.cameraToggleButton'),
+    loadedVideoEl: panelEl.querySelector('.loadedVideo'),
+    videoStageEl: panelEl.querySelector('.videoStage'),
+    videoStageActionEl: panelEl.querySelector('.videoStageAction'),
+    videoScaleSliderEl: panelEl.querySelector('.videoScaleSlider'),
+    videoScaleValueEl: panelEl.querySelector('.videoScaleValue'),
+    faceOverlayEl,
+    faceIdBarEl: panelEl.querySelector('.faceIdBar'),
+    faceOverlayCtx: faceOverlayEl.getContext('2d'),
+    processCanvas: document.createElement('canvas'),
+    processCtx: null,
+    loadedVideoUrl: null,
+    mediaStream: null,
+    ml5InputVideoEl: null,
+    ml5InputStream: null,
+    ml5InputTrack: null,
+    detectLoopHandle: 0,
+    detectLoopStartTimeout: 0,
+    detectInFlight: false,
+    lastDetectStartedAtMs: 0,
+    lastDetectionCompletedAtMs: 0,
+    visibleFaces: [],
+    knownFaces: [],
+    pendingFaces: [],
+    detectionFrameIndex: 0,
+    faceDescriptorMaxDistance: DEFAULT_FACE_DESCRIPTOR_MAX_DISTANCE,
+    videoScale: Number(panelEl.querySelector('.videoScaleSlider')?.value || DEFAULT_VIDEO_SCALE),
+    detectionSourceWidth: 0,
+    detectionSourceHeight: 0,
+    primaryPersonId: null,
+    primarySeenAtMs: 0,
+    ml5Facemesh: null,
+    ml5FacemeshReady: false,
+    ml5FacemeshLoading: null,
+    ml5FacemeshError: null,
+    ml5Predictions: [],
+    ml5PredictionVersion: 0,
+    ml5SessionId: 0,
+    ml5LastPredictionAtMs: 0,
+    ml5LastAcceptedPredictionAtMs: 0,
+    ml5LastRestartAtMs: 0,
+    ml5SourceMode: sourceType === 'camera' ? 'direct-video' : 'loaded-video',
+    ml5ForceClonedVideo: false,
+    ml5BootDeadlineAtMs: 0,
+    ml5DirectRestartWindowStartedAtMs: 0,
+    ml5DirectRestartCount: 0,
+  };
+  state.processCtx = state.processCanvas.getContext('2d', { willReadFrequently: true });
+  return state;
+}
+
+function getRecentSpatialOnlyMaxAgeFrames(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES : RECENT_SPATIAL_ONLY_MAX_AGE_FRAMES;
+}
+
+function getRecentDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE : RECENT_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getGlobalDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE : GLOBAL_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getGlobalDescriptorMatchMargin(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_GLOBAL_DESCRIPTOR_MATCH_MARGIN : GLOBAL_DESCRIPTOR_MATCH_MARGIN;
+}
+
+function getRelaxedDescriptorMatchMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE : RELAXED_DESCRIPTOR_MATCH_MAX_DISTANCE;
+}
+
+function getRelaxedDescriptorMatchMargin(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_RELAXED_DESCRIPTOR_MATCH_MARGIN : RELAXED_DESCRIPTOR_MATCH_MARGIN;
+}
+
+function getDescriptorUpdateMaxDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_DESCRIPTOR_UPDATE_MAX_DISTANCE : DESCRIPTOR_UPDATE_MAX_DISTANCE;
+}
+
+function getNewFaceConfirmFrames(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_NEW_FACE_CONFIRM_FRAMES : NEW_FACE_CONFIRM_FRAMES;
+}
+
+function getMinDetectionScore(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MIN_DETECTION_SCORE : FILE_MIN_DETECTION_SCORE;
+}
+
+function getMaxKnownReuseDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MAX_KNOWN_REUSE_DISTANCE : FILE_MAX_KNOWN_REUSE_DISTANCE;
+}
+
+function getMaxNewFaceKnownDistance(panelState) {
+  return panelState.sourceType === 'camera' ? CAMERA_MAX_NEW_FACE_KNOWN_DISTANCE : FILE_MAX_NEW_FACE_KNOWN_DISTANCE;
+}
+
+function updateVideoScaleUi(panelState) {
+  if (!panelState.videoScaleValueEl) return;
+  panelState.videoScaleValueEl.textContent = `${panelState.videoScale.toFixed(2)}x`;
+}
+
+function updateStageAction(panelState) {
+  if (!panelState.videoStageActionEl) return;
+  if (panelState.sourceType === 'camera') {
+    const isActive = Boolean(panelState.mediaStream);
+    panelState.videoStageActionEl.textContent = isActive ? 'Stop Camera' : 'Start Camera';
+    panelState.videoStageEl.setAttribute('aria-label', isActive ? 'Stop Camera' : 'Start Camera');
+    return;
+  }
+  const hasVideo = Boolean(panelState.loadedVideoUrl);
+  panelState.videoStageActionEl.textContent = hasVideo ? 'Replace MP4' : 'Load MP4';
+  panelState.videoStageEl.setAttribute('aria-label', hasVideo ? 'Replace MP4' : 'Load MP4');
+}
+
+function applyVideoScale(panelState) {
+  panelState.videoStageEl.style.width = `${panelState.videoScale * 100}%`;
+  resizeFaceOverlay(panelState);
+  updateFaceSizeBar(panelState);
+  updatePanelStatus(panelState);
+}
+
+for (const panelState of panelStates) {
+  if (panelState.videoScaleSliderEl) {
+    panelState.videoScaleSliderEl.addEventListener('input', () => {
+      panelState.videoScale = Number(panelState.videoScaleSliderEl.value);
+      updateVideoScaleUi(panelState);
+      applyVideoScale(panelState);
+    });
+  }
+  updateVideoScaleUi(panelState);
+  applyVideoScale(panelState);
+}
+
+function formatFaceLabel(face) {
+  return `${face.personCode} ${face.personIndex}`;
+}
+
+function formatPersonLabel(person) {
+  return `${person.personCode} ${person.id}`;
+}
+
+function isSamePerson(a, b) {
+  return Boolean(a && b && a.id === b.id);
+}
+
+function setActivePerson(person) {
+  activePerson = person;
+  lastTransitionedPerson = person;
+  cloudBaseTarget = { ...person.cloudParams };
+  updateCloudTargetWithMicrogestures();
+}
+
+function stopActivePersonShift() {
+  activePerson = null;
+  cloudBaseTarget = { ...cloudCurrent };
+  updateCloudTargetWithMicrogestures();
+}
+
+function resetWinnerPulseTracking() {
+  pulseConfirmedWinnerKey = null;
+  pulsePendingWinnerKey = null;
+  pulsePendingSinceMs = 0;
+  pulseConfirmedWinnerSeenAtMs = 0;
+}
+
+function getCloudTransitionDistance() {
+  let distance = 0;
+  let hueDelta = cloudTarget.skyH - cloudCurrent.skyH;
+  if (hueDelta > 180) hueDelta -= 360;
+  if (hueDelta < -180) hueDelta += 360;
+  distance += Math.abs(hueDelta) / 20;
+  distance += Math.abs(cloudTarget.skyS - cloudCurrent.skyS) / 66;
+  distance += Math.abs(cloudTarget.skyV - cloudCurrent.skyV) / 63;
+  distance += Math.abs(cloudTarget.turbulence - cloudCurrent.turbulence) / 4;
+  distance += Math.abs(cloudTarget.noiseOffset - cloudCurrent.noiseOffset) / 0.73;
+  distance += Math.abs(cloudTarget.noiseCeiling - cloudCurrent.noiseCeiling) / 0.8;
+  return distance;
+}
+
+function isCloudTransitionSettled() {
+  return getCloudTransitionDistance() <= 0.035;
+}
+
+function isCloudReadyForNewWinner() {
+  return cloudWinnerTransitionStartedAtMs > 0
+    && performance.now() - cloudWinnerTransitionStartedAtMs >= CLOUD_NEW_WINNER_READY_MS;
+}
+
+function resetSunPulseCycle() {
+  sunPulseTransitionPending = false;
+  sunPulseTransitionCommitted = false;
+  pendingTransitionPerson = null;
+  cloudWinnerTransitionStartedAtMs = 0;
+  clearSunPulseWinnerLock();
+}
+
+function commitSunPulseTransition(person) {
+  if (!person || sunPulseTransitionCommitted || sunPulseTransitionPending) return;
+  sunPulseTransitionPending = false;
+  pendingTransitionPerson = null;
+  sunPulseTransitionCommitted = true;
+  cloudWinnerTransitionStartedAtMs = performance.now();
+  transitionFlashLevel = 0;
+  transitionFlashDirection = 1;
+  transitionFlashSpread = 0;
+  sunPulseMode = 'idle';
+  sunPulseLevel = 0;
+  sunPulseHoverPhase = 0;
+  setActivePerson(person);
+}
+
+function shouldPlaySunPulseForPerson(person) {
+  if (!person) return false;
+  if (isSamePerson(person, activePerson)) return false;
+  if (isSamePerson(person, pendingTransitionPerson)) return false;
+  if (isSamePerson(person, lastTransitionedPerson)) return false;
+  return true;
+}
+
+function createTrackedPerson() {
+  return registerPerson();
+}
+
+function getBoxCenter(box) {
+  return {
+    x: box.x + box.width * 0.5,
+    y: box.y + box.height * 0.5,
+  };
+}
+
+function getPointsCenter(points) {
+  if (!points || !points.length) return { x: 0, y: 0 };
+  let x = 0;
+  let y = 0;
+  for (const point of points) {
+    x += point.x;
+    y += point.y;
+  }
+  return { x: x / points.length, y: y / points.length };
+}
+
+function getAreaRatio(a, b) {
+  const areaA = Math.max(1, getFaceArea(a));
+  const areaB = Math.max(1, getFaceArea(b));
+  return areaA > areaB ? areaA / areaB : areaB / areaA;
+}
+
+function getSpatialMatchScore(a, b) {
+  const centerA = getBoxCenter(a);
+  const centerB = getBoxCenter(b);
+  const dx = centerA.x - centerB.x;
+  const dy = centerA.y - centerB.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+  const sizeRef = Math.max(
+    1,
+    Math.sqrt(getFaceArea(a)),
+    Math.sqrt(getFaceArea(b))
+  );
+  const normalizedDistance = distance / sizeRef;
+  const areaRatio = getAreaRatio(a, b);
+  return normalizedDistance + (areaRatio - 1) * 0.35;
+}
+
+function isSpatialMatch(a, b) {
+  if (!a || !b) return false;
+  const areaRatio = getAreaRatio(a, b);
+  if (areaRatio > 2.8) return false;
+  return getSpatialMatchScore(a, b) < 0.9;
+}
+
+function isDetectionUsable(panelState, detection) {
+  if (!detection || !detection.detection || detection.detection.score < getMinDetectionScore(panelState)) return false;
+  if (!detection.landmarks) return false;
+
+  const leftEye = getPointsCenter(detection.landmarks.getLeftEye());
+  const rightEye = getPointsCenter(detection.landmarks.getRightEye());
+  const nose = getPointsCenter(detection.landmarks.getNose());
+  const mouth = getPointsCenter(detection.landmarks.getMouth());
+  const eyeMidX = (leftEye.x + rightEye.x) * 0.5;
+  const eyeDist = Math.max(1, Math.abs(rightEye.x - leftEye.x));
+
+  const noseOffset = Math.abs(nose.x - eyeMidX) / eyeDist;
+  const mouthOffset = Math.abs(mouth.x - eyeMidX) / eyeDist;
+  const eyeLevelDelta = Math.abs(rightEye.y - leftEye.y) / eyeDist;
+
+  return noseOffset <= 0.40 && mouthOffset <= 0.42 && eyeLevelDelta <= 0.30;
+}
+
+function cloneDescriptor(descriptor) {
+  if (!descriptor) return null;
+  return descriptor.slice ? descriptor.slice() : new Float32Array(descriptor);
+}
+
+function getDescriptorSamples(entry) {
+  if (!entry) return [];
+  if (entry.descriptorSamples && entry.descriptorSamples.length) {
+    return entry.descriptorSamples;
+  }
+  return entry.descriptor ? [entry.descriptor] : [];
+}
+
+function getBestDescriptorDistance(entry, descriptor) {
+  if (!entry || !descriptor) return Infinity;
+  const samples = getDescriptorSamples(entry);
+  if (!samples.length) return Infinity;
+
+  let bestDistance = Infinity;
+  for (const sample of samples) {
+    const distance = faceapi.euclideanDistance(sample, descriptor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+    }
+  }
+  return bestDistance;
+}
+
+function getBestKnownFaceDistance(panelState, descriptor, usedKnownPersonIds = new Set()) {
+  let bestKnownFace = null;
+  let bestDistance = Infinity;
+
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    if (!getDescriptorSamples(knownFace).length) continue;
+    const distance = getBestDescriptorDistance(knownFace, descriptor);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      bestKnownFace = knownFace;
+    }
+  }
+
+  return { knownFace: bestKnownFace, distance: bestDistance };
+}
+
+function addDescriptorSample(entry, descriptor) {
+  if (!entry || !descriptor) return;
+  if (!entry.descriptorSamples) {
+    entry.descriptorSamples = getDescriptorSamples(entry).map(cloneDescriptor).filter(Boolean);
+  }
+
+  const bestDistance = getBestDescriptorDistance(entry, descriptor);
+  if (bestDistance <= 0.12) return;
+
+  entry.descriptorSamples.push(cloneDescriptor(descriptor));
+  if (entry.descriptorSamples.length > MAX_DESCRIPTOR_SAMPLES) {
+    entry.descriptorSamples.shift();
+  }
+  entry.descriptor = entry.descriptorSamples[entry.descriptorSamples.length - 1];
+}
+
+function updateKnownFaceTrack(panelState, knownFace, descriptor, box) {
+  if (descriptor && shouldUpdateKnownFaceDescriptor(panelState, knownFace, descriptor)) {
+    addDescriptorSample(knownFace, descriptor);
+  }
+  knownFace.box = box;
+  knownFace.lastSeenAt = panelState.detectionFrameIndex;
+}
+
+function shouldUpdateKnownFaceDescriptor(panelState, knownFace, descriptor) {
+  if (!descriptor) return false;
+  if (!getDescriptorSamples(knownFace).length) return true;
+  const distance = getBestDescriptorDistance(knownFace, descriptor);
+  return distance <= getDescriptorUpdateMaxDistance(panelState);
+}
+
+function cleanupFaceTrackingState(panelState) {
+  panelState.pendingFaces = panelState.pendingFaces.filter(
+    (pendingFace) => panelState.detectionFrameIndex - pendingFace.lastSeenAt <= PENDING_STALE_MAX_AGE_FRAMES
+  );
+}
+
+function clearKnownFaceSpatialState(panelState) {
+  for (const knownFace of panelState.knownFaces) {
+    knownFace.box = null;
+    knownFace.lastSeenAt = -Infinity;
+  }
+}
+
+function getFaceArea(box) {
+  return box.width * box.height;
+}
+
+function getRenderedFaceMetrics(panelState, box) {
+  const sourceWidth = panelState.detectionSourceWidth || panelState.loadedVideoEl.videoWidth || panelState.faceOverlayEl.width || 1;
+  const sourceHeight = panelState.detectionSourceHeight || panelState.loadedVideoEl.videoHeight || panelState.faceOverlayEl.height || 1;
+  const containerWidth = panelState.faceOverlayEl.width || panelState.videoStageEl.clientWidth || 1;
+  const containerHeight = panelState.faceOverlayEl.height || panelState.videoStageEl.clientHeight || 1;
+  const containScale = Math.min(containerWidth / sourceWidth, containerHeight / sourceHeight);
+  const drawnWidth = sourceWidth * containScale;
+  const drawnHeight = sourceHeight * containScale;
+  const offsetX = (containerWidth - drawnWidth) / 2;
+  const offsetY = (containerHeight - drawnHeight) / 2;
+
+  return {
+    x: box.x * containScale + offsetX,
+    y: box.y * containScale + offsetY,
+    width: box.width * containScale,
+    height: box.height * containScale,
+    area: box.width * containScale * box.height * containScale,
+  };
+}
+
+function prepareProcessingFrame(panelState) {
+  const sourceWidth = panelState.loadedVideoEl.videoWidth || 0;
+  const sourceHeight = panelState.loadedVideoEl.videoHeight || 0;
+  if (!sourceWidth || !sourceHeight) return null;
+
+  let cropX = 0;
+  let cropY = 0;
+  let cropWidth = sourceWidth;
+  let cropHeight = sourceHeight;
+
+  if (panelState.sourceType === 'camera') {
+    const sourceAspect = sourceWidth / sourceHeight;
+    if (sourceAspect > CAMERA_PROCESSING_CROP_ASPECT) {
+      cropWidth = sourceHeight * CAMERA_PROCESSING_CROP_ASPECT;
+      cropX = (sourceWidth - cropWidth) * 0.5;
+    } else {
+      cropHeight = sourceWidth / CAMERA_PROCESSING_CROP_ASPECT;
+      cropY = (sourceHeight - cropHeight) * 0.5;
+    }
+
+    const zoomedWidth = cropWidth / CAMERA_PROCESSING_ZOOM;
+    const zoomedHeight = cropHeight / CAMERA_PROCESSING_ZOOM;
+    cropX += (cropWidth - zoomedWidth) * 0.5;
+    cropY += (cropHeight - zoomedHeight) * 0.5;
+    cropWidth = zoomedWidth;
+    cropHeight = zoomedHeight;
+  }
+
+  const maxProcessingWidth = panelState.sourceType === 'camera'
+    ? activePerfProfile.processingMaxWidth
+    : cropWidth * panelState.videoScale;
+  const desiredWidth = cropWidth * panelState.videoScale;
+  const processingScale = Math.min(1, maxProcessingWidth / Math.max(1, desiredWidth));
+  const scaledWidth = Math.max(64, Math.round(desiredWidth * processingScale));
+  const scaledHeight = Math.max(64, Math.round(cropHeight * panelState.videoScale * processingScale));
+
+  if (panelState.processCanvas.width !== scaledWidth) {
+    panelState.processCanvas.width = scaledWidth;
+  }
+  if (panelState.processCanvas.height !== scaledHeight) {
+    panelState.processCanvas.height = scaledHeight;
+  }
+
+  panelState.processCtx.clearRect(0, 0, scaledWidth, scaledHeight);
+  panelState.processCtx.drawImage(
+    panelState.loadedVideoEl,
+    cropX,
+    cropY,
+    cropWidth,
+    cropHeight,
+    0,
+    0,
+    scaledWidth,
+    scaledHeight
+  );
+  panelState.detectionSourceWidth = scaledWidth;
+  panelState.detectionSourceHeight = scaledHeight;
+  return panelState.processCanvas;
+}
+
+function updatePanelStatus(panelState) {
+  updateStageAction(panelState);
+}
+
+function getLargestVisibleFace(panelState) {
+  let largestFace = null;
+  let largestArea = -1;
+  for (const face of panelState.visibleFaces) {
+    const area = getRenderedFaceMetrics(panelState, face.box).area;
+    if (area > largestArea) {
+      largestArea = area;
+      largestFace = face;
+    }
+  }
+  return largestFace;
+}
+
+function updatePrimaryFaceMemory(panelState) {
+  if (panelState.sourceType !== 'camera') return;
+  const primaryFace = getLargestVisibleFace(panelState);
+  if (!primaryFace) return;
+  panelState.primaryPersonId = primaryFace.personId;
+  panelState.primarySeenAtMs = performance.now();
+}
+
+async function activatePanelVideo(panelState) {
+  resetTrackedFaces(panelState);
+  resizeFaceOverlay(panelState);
+  panelState.videoStageEl.classList.add('hasVideo');
+  if (panelState.sourceType === 'camera') {
+    updateStartupRailStatus({
+      faceApiDetail: 'Camera granted. Loading face models...',
+      ml5Detail: 'Camera granted. Preparing ml5...',
+      ml5FacemeshDetail: 'Camera granted. First load on iPad may pause briefly.',
+    });
+  }
+  await ensureFaceApiReady();
+  if (panelState.sourceType === 'camera') {
+    updateStartupRailStatus({
+      faceApiDetail: 'Face models loaded. Warming up live video...',
+      ml5Detail: 'ml5 ready. Waiting for live video...',
+      ml5FacemeshDetail: 'Warming up live video before facemesh starts.',
+    });
+  }
+  await panelState.loadedVideoEl.play();
+  if (panelState.sourceType === 'camera') {
+    panelState.ml5SourceMode = panelState.ml5ForceClonedVideo ? 'cloned-video' : 'direct-video';
+    updateStartupRailStatus({
+      faceApiDetail: 'Live video starting...',
+      ml5Detail: `ml5 ready. Using ${panelState.ml5SourceMode}.`,
+      ml5FacemeshDetail: 'Waiting for live video frames...',
+    });
+    await waitForVideoReady(panelState.loadedVideoEl);
+    updateStartupRailStatus({
+      faceApiDetail: 'Live video ready.',
+      ml5Detail: `ml5 ready. Using ${panelState.ml5SourceMode}.`,
+      ml5FacemeshDetail: 'Starting facemesh. The first pass may pause briefly.',
+    });
+    await new Promise((resolve) => window.setTimeout(resolve, CAMERA_ML5_WARMUP_DELAY_MS));
+    if (shouldRunMl5Facemesh(panelState)) {
+      void ensureMl5FacemeshReadyForPanel(panelState);
+    } else {
+      syncMl5FacemeshRail();
+    }
+  }
+  startFaceDetectionLoop(panelState);
+  updatePanelStatus(panelState);
+  updateCloudTargetFromPanels();
+  updateAnalysisDebugPanel();
+}
+
+function stopPanelMedia(panelState, { preserveUrl = false } = {}) {
+  stopFaceDetectionLoop(panelState);
+  resetMl5AnalysisForPanel(panelState);
+  if (!preserveUrl && panelState.loadedVideoUrl) {
+    URL.revokeObjectURL(panelState.loadedVideoUrl);
+    panelState.loadedVideoUrl = null;
+  }
+  if (panelState.mediaStream) {
+    for (const track of panelState.mediaStream.getTracks()) track.stop();
+    panelState.mediaStream = null;
+  }
+  teardownMl5FallbackSource(panelState);
+  panelState.loadedVideoEl.pause();
+  panelState.loadedVideoEl.srcObject = null;
+  if (!preserveUrl) {
+    panelState.loadedVideoEl.removeAttribute('src');
+    panelState.loadedVideoEl.load();
+  }
+  panelState.videoStageEl.classList.remove('hasVideo');
+  resetTrackedFaces(panelState);
+  panelState.detectInFlight = false;
+  panelState.lastDetectStartedAtMs = 0;
+  panelState.lastDetectionCompletedAtMs = 0;
+  panelState.ml5SourceMode = panelState.ml5ForceClonedVideo ? 'cloned-video' : 'direct-video';
+  updatePanelStatus(panelState);
+  updateCloudTargetFromPanels();
+  updateAnalysisDebugPanel();
+  syncMl5FacemeshRail();
+}
+
+async function startCameraPanel(panelState) {
+  if (panelState.mediaStream) return;
+  stopPanelMedia(panelState);
+  updateStartupRailStatus({
+    faceApiDetail: 'Requesting camera access...',
+    ml5Detail: 'Waiting for camera permission...',
+    ml5FacemeshDetail: 'Waiting for camera permission...',
+  });
+  const mediaStream = await navigator.mediaDevices.getUserMedia({
+    video: {
+      facingMode: { ideal: 'user' },
+      width: { ideal: 960, max: 1280 },
+      height: { ideal: 720, max: 960 },
+      aspectRatio: { ideal: 4 / 3 },
+      resizeMode: 'crop-and-scale',
+      frameRate: { ideal: 24, max: 24 },
+    },
+    audio: false,
+  });
+  panelState.mediaStream = mediaStream;
+  panelState.loadedVideoEl.srcObject = mediaStream;
+  panelState.ml5SourceMode = panelState.ml5ForceClonedVideo ? 'cloned-video' : 'direct-video';
+  panelState.loadedVideoUrl = null;
+  updateStartupRailStatus({
+    faceApiDetail: 'Camera granted. Preparing startup...',
+    ml5Detail: 'Camera granted. Preparing startup...',
+    ml5FacemeshDetail: 'Camera granted. Loading may pause briefly on first run.',
+  });
+  await activatePanelVideo(panelState);
+}
+
+// ── VIDEO LOADER ────────────────────────────────────────────
+for (const panelState of panelStates) {
+  if (panelState.videoFileInputEl) {
+  panelState.videoFileInputEl.addEventListener('change', async (event) => {
+  const [file] = event.target.files || [];
+  if (!file) return;
+
+  if (file.type && file.type !== 'video/mp4') {
+    panelState.videoFileInputEl.value = '';
+    return;
+  }
+
+  if (panelState.loadedVideoUrl) {
+    URL.revokeObjectURL(panelState.loadedVideoUrl);
+  }
+
+  stopPanelMedia(panelState, { preserveUrl: true });
+  panelState.loadedVideoUrl = URL.createObjectURL(file);
+  panelState.loadedVideoEl.src = panelState.loadedVideoUrl;
+  panelState.loadedVideoEl.currentTime = 0;
+  panelState.loadedVideoEl.muted = true;
+  panelState.loadedVideoEl.defaultMuted = true;
+
+  try {
+    await activatePanelVideo(panelState);
+  } catch (error) {
+    console.error(error);
+  }
+  });
+  }
+
+  const handleStageAction = async () => {
+    if (panelState.sourceType === 'camera') {
+      if (panelState.mediaStream) {
+        stopPanelMedia(panelState);
+        return;
+      }
+
+      try {
+        await startCameraPanel(panelState);
+      } catch (error) {
+        console.error(error);
+      }
+      return;
+    }
+
+    if (panelState.videoFileInputEl) {
+      panelState.videoFileInputEl.click();
+    }
+  };
+
+  if (panelState.videoStageEl) {
+    panelState.videoStageEl.addEventListener('click', () => {
+      void handleStageAction();
+    });
+    panelState.videoStageEl.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      void handleStageAction();
+    });
+  }
+
+  panelState.loadedVideoEl.addEventListener('loadedmetadata', () => {
+    resizeFaceOverlay(panelState);
+    syncMl5FacemeshRail();
+  });
+
+  panelState.loadedVideoEl.addEventListener('play', () => {
+    startFaceDetectionLoop(panelState);
+    syncMl5FacemeshRail();
+  });
+
+  panelState.loadedVideoEl.addEventListener('pause', () => {
+    stopFaceDetectionLoop(panelState);
+    updatePanelStatus(panelState);
+    updateCloudTargetFromPanels();
+    syncMl5FacemeshRail();
+  });
+
+  panelState.loadedVideoEl.addEventListener('ended', () => {
+    stopFaceDetectionLoop(panelState);
+    updatePanelStatus(panelState);
+    updateCloudTargetFromPanels();
+    syncMl5FacemeshRail();
+  });
+}
+
+window.addEventListener('resize', () => {
+  for (const panelState of panelStates) resizeFaceOverlay(panelState);
+});
+
+// ── FACE API ────────────────────────────────────────────────
+async function ensureFaceApiReady() {
+  if (faceApiReady) return;
+  if (!window.faceapi) {
+    updateFaceApiRail('face-api.js error', 'The local script is missing or failed to load.');
+    throw new Error('face-api.js is not available');
+  }
+  if (!faceApiLoading) {
+    updateFaceApiRail('face-api.js ready', 'Loading face-api models...');
+    for (const panelState of panelStates) {
+      if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: loading detector';
+    }
+    faceApiLoading = Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceLandmark68Net.loadFromUri(FACE_MODEL_URL),
+      faceapi.nets.faceRecognitionNet.loadFromUri(FACE_MODEL_URL),
+    ])
+      .then(() => {
+        faceApiReady = true;
+        updateFaceApiRail('face-api.js ready', 'Models loaded.');
+        refreshStatusRailVisibility();
+      })
+      .catch((error) => {
+        const detail = error && error.message ? `Model load failed: ${error.message}` : 'Model load failed.';
+        updateFaceApiRail('face-api.js error', detail);
+        throw error;
+      });
+  }
+  await faceApiLoading;
+}
+
+function resizeFaceOverlay(panelState) {
+  const width = panelState.videoStageEl.clientWidth;
+  const height = panelState.videoStageEl.clientHeight;
+  if (!width || !height) return;
+  panelState.faceOverlayEl.width = width;
+  panelState.faceOverlayEl.height = height;
+  drawTrackedFaces(panelState);
+}
+
+function resetTrackedFaces(panelState) {
+  panelState.visibleFaces = [];
+  panelState.pendingFaces = [];
+  panelState.detectionSourceWidth = 0;
+  panelState.detectionSourceHeight = 0;
+  panelState.primaryPersonId = null;
+  panelState.primarySeenAtMs = 0;
+  clearKnownFaceSpatialState(panelState);
+  if (panelState.faceIdBarEl) panelState.faceIdBarEl.textContent = 'Persons: none';
+  clearFaceOverlay(panelState);
+}
+
+window.addEventListener('unhandledrejection', (event) => {
+  const message = event?.reason?.message || '';
+  if (!message.includes(ML5_VIDEO_NOT_READY_ERROR)) return;
+
+  event.preventDefault();
+  for (const panelState of panelStates) {
+    if (!isVideoReadyForAnalysis(panelState.loadedVideoEl)) {
+      resetMl5AnalysisForPanel(panelState);
+    }
+  }
+  updateAnalysisDebugPanel();
+});
+
+function clearFaceOverlay(panelState) {
+  panelState.faceOverlayCtx.clearRect(0, 0, panelState.faceOverlayEl.width, panelState.faceOverlayEl.height);
+}
+
+function toggleDebugPanels() {
+  if (videoPanelsEl) {
+    videoPanelsEl.classList.toggle('isVisible');
+  }
+  if (cloudDebugPanelEl) {
+    cloudDebugPanelEl.classList.toggle('isVisible');
+  }
+  if (analysisDebugPanelEl) {
+    analysisDebugPanelEl.classList.toggle('isVisible');
+  }
+  if (videoPanelsEl && videoPanelsEl.classList.contains('isVisible')) {
+    for (const panelState of panelStates) resizeFaceOverlay(panelState);
+  }
+  updateAnalysisDebugPanel();
+}
+
+function toggleSunburst() {
+  sunburstEnabled = !sunburstEnabled;
+  forceCloudRedraw = true;
+  updateCloudDebug();
+}
+
+function isTopRightDebugTap(event) {
+  const x = event.clientX;
+  const y = event.clientY;
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return false;
+  return x >= window.innerWidth - DEBUG_TAP_CORNER_SIZE_PX && y <= DEBUG_TAP_CORNER_SIZE_PX;
+}
+
+window.addEventListener('pointerdown', (event) => {
+  if (event.pointerType === 'mouse' || !isTopRightDebugTap(event)) {
+    debugCornerTapCount = 0;
+    return;
+  }
+
+  const now = performance.now();
+  if (now - debugCornerTapLastAtMs > DEBUG_TAP_MULTI_CLICK_GAP_MS) {
+    debugCornerTapCount = 0;
+  }
+
+  debugCornerTapLastAtMs = now;
+  debugCornerTapCount += 1;
+
+  if (debugCornerTapCount >= DEBUG_TAP_COUNT_REQUIRED) {
+    debugCornerTapCount = 0;
+    toggleDebugPanels();
+  }
+});
+
+window.addEventListener('keydown', (event) => {
+  if (event.defaultPrevented || event.repeat) return;
+
+  const target = event.target;
+  const tagName = target && target.tagName ? target.tagName.toLowerCase() : '';
+  if (target && (target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select')) {
+    return;
+  }
+
+  if (event.key === 'd' || event.key === 'D') {
+    event.preventDefault();
+    toggleDebugPanels();
+    return;
+  }
+
+  if (event.key === 's' || event.key === 'S') {
+    event.preventDefault();
+    toggleSunburst();
+  }
+});
+
+function startFaceDetectionLoop(panelState) {
+  if (!faceApiReady || panelState.loadedVideoEl.paused || panelState.loadedVideoEl.ended) return;
+  if (panelState.detectLoopHandle || panelState.detectLoopStartTimeout) return;
+  const tick = async () => {
+    panelState.detectLoopHandle = 0;
+    await detectFacesFrame(panelState);
+    if (!panelState.loadedVideoEl.paused && !panelState.loadedVideoEl.ended) {
+      panelState.detectLoopHandle = requestAnimationFrame(tick);
+    }
+  };
+  panelState.detectLoopStartTimeout = window.setTimeout(() => {
+    panelState.detectLoopStartTimeout = 0;
+    if (!panelState.loadedVideoEl.paused && !panelState.loadedVideoEl.ended) {
+      panelState.detectLoopHandle = requestAnimationFrame(tick);
+    }
+  }, VIDEO_LOAD_DETECTION_DELAY_MS);
+}
+
+function stopFaceDetectionLoop(panelState) {
+  if (panelState.detectLoopStartTimeout) {
+    clearTimeout(panelState.detectLoopStartTimeout);
+    panelState.detectLoopStartTimeout = 0;
+  }
+  if (!panelState.detectLoopHandle) return;
+  cancelAnimationFrame(panelState.detectLoopHandle);
+  panelState.detectLoopHandle = 0;
+}
+
+async function detectFacesFrame(panelState) {
+  if (!faceApiReady || panelState.loadedVideoEl.readyState < 2) return;
+  const now = performance.now();
+  if (panelState.detectInFlight) return;
+  if (
+    panelState.sourceType === 'camera'
+    && now - panelState.lastDetectStartedAtMs < activePerfProfile.minDetectionIntervalMs
+  ) {
+    return;
+  }
+  panelState.lastDetectStartedAtMs = now;
+  panelState.detectInFlight = true;
+  try {
+    panelState.detectionFrameIndex += 1;
+    const processCanvas = prepareProcessingFrame(panelState);
+    if (!processCanvas) return;
+    const detections = await faceapi
+      .detectAllFaces(
+        processCanvas,
+        new faceapi.TinyFaceDetectorOptions({
+          inputSize: activePerfProfile.detectorInputSize,
+          scoreThreshold: 0.46,
+        })
+      )
+      .withFaceLandmarks()
+      .withFaceDescriptors();
+    panelState.lastDetectionCompletedAtMs = performance.now();
+    cleanupFaceTrackingState(panelState);
+    panelState.visibleFaces = assignVisibleFaces(panelState, detections);
+    updatePrimaryFaceMemory(panelState);
+    updateCloudTargetFromPanels();
+    updateFaceIdBar(panelState);
+    updateFaceSizeBar(panelState);
+    updatePanelStatus(panelState);
+    drawTrackedFaces(panelState);
+  } catch (error) {
+    console.error(error);
+    stopFaceDetectionLoop(panelState);
+  } finally {
+    panelState.detectInFlight = false;
+  }
+}
+
+function assignVisibleFaces(panelState, detections) {
+  const nextVisibleFaces = [];
+  const usedKnownPersonIds = new Set();
+  for (const detection of detections) {
+    if (!isDetectionUsable(panelState, detection)) continue;
+    const box = detection.detection.box;
+    const descriptor = detection.descriptor;
+    const person = getOrCreateKnownPerson(panelState, descriptor, box, usedKnownPersonIds);
+    if (!person) continue;
+    usedKnownPersonIds.add(person.id);
+    nextVisibleFaces.push({
+      personId: person.id,
+      personCode: person.personCode,
+      personIndex: person.id,
+      box,
+      descriptor,
+      score: detection.detection.score,
+    });
+  }
+  return nextVisibleFaces;
+}
+
+function updateFaceIdBar(panelState) {
+  if (!panelState.faceIdBarEl) return;
+  panelState.faceIdBarEl.textContent = panelState.visibleFaces.length
+    ? `Persons: ${panelState.visibleFaces.map(formatFaceLabel).join(' · ')}`
+    : 'Persons: none';
+}
+
+function updateFaceSizeBar(panelState) {
+  return;
+}
+
+function getLargestVisibleFaceAcrossPanels() {
+  if (!isWinnerSystemReady()) {
+    return { panelState: null, face: null, area: -1, secondArea: -1 };
+  }
+
+  let bestPanelState = null;
+  let bestFace = null;
+  let bestArea = -1;
+  let secondBestArea = -1;
+
+  for (const panelState of panelStates) {
+    const face = getLargestVisibleFace(panelState);
+    if (!face) continue;
+    const area = getRenderedFaceMetrics(panelState, face.box).area;
+    if (area > bestArea) {
+      secondBestArea = bestArea;
+      bestArea = area;
+      bestFace = face;
+      bestPanelState = panelState;
+    } else if (area > secondBestArea) {
+      secondBestArea = area;
+    }
+  }
+
+  return { panelState: bestPanelState, face: bestFace, area: bestArea, secondArea: secondBestArea };
+}
+
+function getWinnerKey(panelState, face) {
+  if (!panelState || !face) return null;
+  return `${panelState.index}:${face.personId}`;
+}
+
+function getPersonForWinnerSnapshot(winnerSnapshot) {
+  if (!winnerSnapshot || !winnerSnapshot.face) return null;
+  return people.find((entry) => entry.id === winnerSnapshot.face.personId) || null;
+}
+
+function isClearGlobalWinner(winnerSnapshot) {
+  if (!winnerSnapshot.face || winnerSnapshot.area <= 0) return false;
+  if (winnerSnapshot.secondArea <= 0) return true;
+  return winnerSnapshot.area >= winnerSnapshot.secondArea * SUN_PULSE_CLEAR_WINNER_RATIO;
+}
+
+function updateWinnerPulseState(winnerSnapshot, now) {
+  if (!winnerSnapshot.face || !isClearGlobalWinner(winnerSnapshot)) {
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    if (pulseConfirmedWinnerKey && now - pulseConfirmedWinnerSeenAtMs <= SUN_PULSE_CONFIRMED_GRACE_MS) {
+      return true;
+    }
+    pulseConfirmedWinnerKey = null;
+    pulseConfirmedWinnerSeenAtMs = 0;
+    return false;
+  }
+
+  const winnerKey = getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face);
+  if (!winnerKey || winnerKey === pulseConfirmedWinnerKey) {
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    if (winnerKey === pulseConfirmedWinnerKey) {
+      pulseConfirmedWinnerSeenAtMs = now;
+      return true;
+    }
+    return false;
+  }
+
+  if (pulsePendingWinnerKey !== winnerKey) {
+    pulsePendingWinnerKey = winnerKey;
+    pulsePendingSinceMs = now;
+    return false;
+  }
+
+  if (now - pulsePendingSinceMs >= SUN_PULSE_WINNER_HOLD_MS) {
+    pulseConfirmedWinnerKey = winnerKey;
+    pulsePendingWinnerKey = null;
+    pulsePendingSinceMs = 0;
+    pulseConfirmedWinnerSeenAtMs = now;
+    return true;
+  }
+
+  return false;
+}
+
+function updateCloudTargetFromPanels() {
+  if (!isWinnerSystemReady()) {
+    resetWinnerPulseTracking();
+    if (!activePerson || isCloudTransitionSettled()) {
+      // stopActivePersonShift();
+    }
+    updateCloudDebug();
+    return;
+  }
+
+  const winnerSnapshot = getLargestVisibleFaceAcrossPanels();
+  const now = performance.now();
+  const anyFaceDetected = panelStates.some((panelState) => panelState.visibleFaces.length > 0);
+
+  if (anyFaceDetected && !sunPulseHasFaceLatch) {
+    sunPulseHasFaceLatch = true;
+  } else if (!anyFaceDetected && sunPulseHasFaceLatch) {
+    sunPulseHasFaceLatch = false;
+  }
+
+  if (sunPulseTransitionCommitted) {
+    if (!isCloudReadyForNewWinner()) {
+      return;
+    }
+
+    resetSunPulseCycle();
+    resetWinnerPulseTracking();
+    sunPulseLevel = 0;
+    sunPulseCurrentFallPerMs = SUN_PULSE_FALL_PER_MS;
+    sunPulseMode = 'idle';
+    sunPulseHoverPhase = 0;
+    transitionFlashLevel = 0;
+    transitionFlashDirection = 0;
+    transitionFlashSpread = 0;
+  }
+
+  const confirmedWinnerStable = updateWinnerPulseState(winnerSnapshot, now);
+  const hasClearWinner = winnerSnapshot.face && isClearGlobalWinner(winnerSnapshot);
+  const currentWinnerKey = hasClearWinner ? getWinnerKey(winnerSnapshot.panelState, winnerSnapshot.face) : null;
+  const currentWinnerPerson = hasClearWinner ? getPersonForWinnerSnapshot(winnerSnapshot) : null;
+  const hasConfirmedCurrentWinner = Boolean(
+    confirmedWinnerStable &&
+    pulseConfirmedWinnerKey &&
+    currentWinnerKey &&
+    pulseConfirmedWinnerKey === currentWinnerKey
+  );
+
+  if (!sunPulseLockedWinnerKey && hasConfirmedCurrentWinner && currentWinnerPerson && shouldPlaySunPulseForPerson(currentWinnerPerson)) {
+    sunPulseLockedWinnerKey = currentWinnerKey;
+    sunPulseLockedWinnerPerson = currentWinnerPerson;
+  }
+
+  sunPulseLockedWinnerVisible = Boolean(
+    sunPulseLockedWinnerKey &&
+    pulseConfirmedWinnerKey &&
+    confirmedWinnerStable &&
+    pulseConfirmedWinnerKey === sunPulseLockedWinnerKey
+  );
+
+  if (sunPulseLockedWinnerVisible) {
+    if (sunPulseLevel < 1 && sunPulseMode !== 'advancing') {
+      startSunPulseAdvance();
+    }
+  } else if (!sunPulseTransitionCommitted && sunPulseLevel > 0) {
+    startSunPulseRecede();
+  }
+
+  if (!sunPulseLockedWinnerKey && !anyFaceDetected && (!activePerson || isCloudTransitionSettled())) {
+    // stopActivePersonShift();
+  }
+}
+
+function isGlobalWinningFace(panelState, face) {
+  const winner = getLargestVisibleFaceAcrossPanels();
+  return Boolean(
+    winner.panelState &&
+    winner.face &&
+    winner.panelState.index === panelState.index &&
+    winner.face.personId === face.personId
+  );
+}
+
+function getRecentKnownFaceMatch(panelState, descriptor, box, usedKnownPersonIds) {
+  let bestKnownFace = null;
+  let bestScore = Infinity;
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    const ageFrames = panelState.detectionFrameIndex - knownFace.lastSeenAt;
+    if (ageFrames > RECENT_TRACK_MAX_AGE_FRAMES) continue;
+    if (!isSpatialMatch(box, knownFace.box)) continue;
+
+    const spatialScore = getSpatialMatchScore(box, knownFace.box);
+    let score = spatialScore;
+
+    if (descriptor && getDescriptorSamples(knownFace).length) {
+      const descriptorDistance = getBestDescriptorDistance(knownFace, descriptor);
+      if (descriptorDistance > Math.min(panelState.faceDescriptorMaxDistance, getRecentDescriptorMatchMaxDistance(panelState))) continue;
+      score += descriptorDistance * 0.75;
+    } else if (ageFrames > getRecentSpatialOnlyMaxAgeFrames(panelState)) {
+      continue;
+    } else {
+      score += ageFrames * 0.1;
+    }
+
+    if (score < bestScore) {
+      bestScore = score;
+      bestKnownFace = knownFace;
+    }
+  }
+  return bestKnownFace;
+}
+
+function getPrimaryCameraReacquireMatch(panelState, descriptor, usedKnownPersonIds) {
+  if (panelState.sourceType !== 'camera') return null;
+  if (!descriptor || !panelState.primaryPersonId) return null;
+  if (performance.now() - panelState.primarySeenAtMs > CAMERA_PRIMARY_REACQUIRE_MAX_AGE_MS) return null;
+
+  const knownFace = panelState.knownFaces.find((entry) => entry.personId === panelState.primaryPersonId);
+  if (!knownFace || usedKnownPersonIds.has(knownFace.personId)) return null;
+  if (!getDescriptorSamples(knownFace).length) return null;
+
+  const distance = getBestDescriptorDistance(knownFace, descriptor);
+  if (distance > Math.min(panelState.faceDescriptorMaxDistance, CAMERA_PRIMARY_REACQUIRE_MAX_DISTANCE)) return null;
+  return knownFace;
+}
+
+function getDescriptorKnownFaceMatch(
+  panelState,
+  descriptor,
+  usedKnownPersonIds,
+  {
+    maxDistance = getGlobalDescriptorMatchMaxDistance(panelState),
+    minMargin = getGlobalDescriptorMatchMargin(panelState),
+  } = {}
+) {
+  let bestKnownFace = null;
+  let bestDistance = Infinity;
+  let secondBestDistance = Infinity;
+  const effectiveMaxDistance = Math.min(panelState.faceDescriptorMaxDistance, maxDistance);
+
+  for (const knownFace of panelState.knownFaces) {
+    if (usedKnownPersonIds.has(knownFace.personId)) continue;
+    if (!getDescriptorSamples(knownFace).length) continue;
+    const distance = getBestDescriptorDistance(knownFace, descriptor);
+    if (distance < bestDistance) {
+      secondBestDistance = bestDistance;
+      bestDistance = distance;
+      bestKnownFace = knownFace;
+    } else if (distance < secondBestDistance) {
+      secondBestDistance = distance;
+    }
+  }
+
+  if (!bestKnownFace || bestDistance > effectiveMaxDistance) return null;
+  if (Number.isFinite(secondBestDistance) && secondBestDistance - bestDistance < minMargin) {
+    return null;
+  }
+
+  return bestKnownFace;
+}
+
+function getPendingFaceMatch(panelState, descriptor, box) {
+  let bestPendingFace = null;
+  let bestScore = Infinity;
+  for (const pendingFace of panelState.pendingFaces) {
+    if (!isSpatialMatch(box, pendingFace.box)) continue;
+    let score = getSpatialMatchScore(box, pendingFace.box);
+    if (descriptor && getDescriptorSamples(pendingFace).length) {
+      const distance = getBestDescriptorDistance(pendingFace, descriptor);
+      if (distance > panelState.faceDescriptorMaxDistance) continue;
+      score += distance;
+    }
+    if (score < bestScore) {
+      bestScore = score;
+      bestPendingFace = pendingFace;
+    }
+  }
+  return bestPendingFace;
+}
+
+function createPendingFace(panelState, descriptor, box) {
+  if (descriptor) {
+    const nearest = getBestKnownFaceDistance(panelState, descriptor);
+    if (nearest.knownFace && nearest.distance <= getMaxNewFaceKnownDistance(panelState)) {
+      return;
+    }
+  }
+
+  panelState.pendingFaces.push({
+    descriptor: cloneDescriptor(descriptor),
+    descriptorSamples: descriptor ? [cloneDescriptor(descriptor)] : [],
+    box,
+    firstSeenAt: panelState.detectionFrameIndex,
+    lastSeenAt: panelState.detectionFrameIndex,
+    seenCount: 1,
+  });
+}
+
+function promotePendingFaceToKnown(panelState, pendingFace, descriptor, box) {
+  const reidentifiedKnownFace = getDescriptorKnownFaceMatch(
+    panelState,
+    descriptor || pendingFace.descriptor,
+    new Set(),
+    {
+      maxDistance: getRelaxedDescriptorMatchMaxDistance(panelState),
+      minMargin: getRelaxedDescriptorMatchMargin(panelState),
+    }
+  );
+
+  if (reidentifiedKnownFace) {
+    updateKnownFaceTrack(panelState, reidentifiedKnownFace, descriptor || pendingFace.descriptor, box);
+    panelState.pendingFaces = panelState.pendingFaces.filter(entry => entry !== pendingFace);
+    return people.find(person => person.id === reidentifiedKnownFace.personId) || null;
+  }
+
+  const person = createTrackedPerson();
+  panelState.knownFaces.push({
+    personId: person.id,
+    personCode: person.personCode,
+    descriptor: cloneDescriptor(descriptor || pendingFace.descriptor),
+    descriptorSamples: getDescriptorSamples(pendingFace).map(cloneDescriptor),
+    box,
+    lastSeenAt: panelState.detectionFrameIndex,
+  });
+  panelState.pendingFaces = panelState.pendingFaces.filter(entry => entry !== pendingFace);
+  return person;
+}
+
+function getOrCreateKnownPerson(panelState, descriptor, box, usedKnownPersonIds) {
+  const recentKnownFace = getRecentKnownFaceMatch(panelState, descriptor, box, usedKnownPersonIds);
+  if (recentKnownFace) {
+    updateKnownFaceTrack(panelState, recentKnownFace, descriptor, box);
+    return people.find(person => person.id === recentKnownFace.personId);
+  }
+
+  const primaryCameraMatch = getPrimaryCameraReacquireMatch(panelState, descriptor, usedKnownPersonIds);
+  if (primaryCameraMatch) {
+    updateKnownFaceTrack(panelState, primaryCameraMatch, descriptor, box);
+    return people.find(person => person.id === primaryCameraMatch.personId);
+  }
+
+  if (descriptor) {
+    const nearest = getBestKnownFaceDistance(panelState, descriptor, usedKnownPersonIds);
+    if (nearest.knownFace && nearest.distance <= Math.min(panelState.faceDescriptorMaxDistance, getMaxKnownReuseDistance(panelState))) {
+      updateKnownFaceTrack(panelState, nearest.knownFace, descriptor, box);
+      return people.find(person => person.id === nearest.knownFace.personId);
+    }
+
+    const descriptorMatch = getDescriptorKnownFaceMatch(panelState, descriptor, usedKnownPersonIds);
+    if (descriptorMatch) {
+      updateKnownFaceTrack(panelState, descriptorMatch, descriptor, box);
+      return people.find(person => person.id === descriptorMatch.personId);
+    }
+  }
+
+  const pendingFace = getPendingFaceMatch(panelState, descriptor, box);
+  if (pendingFace) {
+    addDescriptorSample(pendingFace, descriptor);
+    pendingFace.descriptor = getDescriptorSamples(pendingFace).slice(-1)[0] || pendingFace.descriptor;
+    pendingFace.box = box;
+    pendingFace.lastSeenAt = panelState.detectionFrameIndex;
+    pendingFace.seenCount += 1;
+    if (pendingFace.seenCount >= getNewFaceConfirmFrames(panelState)) {
+      return promotePendingFaceToKnown(panelState, pendingFace, descriptor, box);
+    }
+    return null;
+  }
+
+  createPendingFace(panelState, descriptor, box);
+  return null;
+}
+
+function drawTrackedFaces(panelState) {
+  clearFaceOverlay(panelState);
+  if (!panelState.faceOverlayEl.width || !panelState.faceOverlayEl.height || !panelState.visibleFaces.length) return;
+
+  panelState.faceOverlayCtx.font = '12px ui-monospace, SFMono-Regular, Menlo, monospace';
+  panelState.faceOverlayCtx.textBaseline = 'top';
+  panelState.faceOverlayCtx.lineWidth = 2;
+  for (const face of panelState.visibleFaces) {
+    const metrics = getRenderedFaceMetrics(panelState, face.box);
+    const x = metrics.x;
+    const y = metrics.y;
+    const width = metrics.width;
+    const height = metrics.height;
+    const isWinner = isGlobalWinningFace(panelState, face);
+    const strokeColor = isWinner ? 'rgba(110, 255, 160, 0.98)' : 'rgba(187, 233, 255, 0.95)';
+    const faceLabel = `ID ${face.personId}`;
+    const labelPaddingX = 6;
+    const labelPaddingY = 4;
+    const labelHeight = 18;
+    const labelWidth = panelState.faceOverlayCtx.measureText(faceLabel).width + labelPaddingX * 2;
+    const labelX = x;
+    const labelY = Math.max(0, y - labelHeight - 4);
+
+    panelState.faceOverlayCtx.strokeStyle = strokeColor;
+    panelState.faceOverlayCtx.strokeRect(x, y, width, height);
+    panelState.faceOverlayCtx.fillStyle = 'rgba(0, 0, 0, 0.72)';
+    panelState.faceOverlayCtx.fillRect(labelX, labelY, labelWidth, labelHeight);
+    panelState.faceOverlayCtx.strokeStyle = strokeColor;
+    panelState.faceOverlayCtx.strokeRect(labelX, labelY, labelWidth, labelHeight);
+    panelState.faceOverlayCtx.fillStyle = strokeColor;
+    panelState.faceOverlayCtx.fillText(faceLabel, labelX + labelPaddingX, labelY + labelPaddingY - 1);
+  }
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+function init() {
+  registerPerson({ trackForFacemesh: false });
+  stopActivePersonShift();
+  updateCloudDebug();
+  updateAnalysisDebugPanel();
+  ensureFaceApiReady().catch((error) => {
+    console.error(error);
+  });
+
+  const cameraPanelState = panelStates.find((panelState) => panelState.sourceType === 'camera');
+  if (cameraPanelState) {
+    startCameraPanel(cameraPanelState).catch((error) => {
+      console.error(error);
+      updatePanelStatus(cameraPanelState);
+    });
+  }
+
+  generateCloud();
+  let lastRegen = performance.now();
+  let needsDraw = true;
+  function frame(now) {
+    stepCloudTransition();
+    updateSunPulse(now);
+    updateHoldStillCue();
+    updateFps(now);
+    updateLivePerformanceAges(now);
+    updateAdaptivePerfProfile(now);
+    updateCloudDebug();
+    if (forceCloudRedraw) {
+      needsDraw = true;
+      forceCloudRedraw = false;
+    }
+    if (now - lastRegen >= regenMs) {
+      const t0 = performance.now();
+      generateCloud();
+      regenTime = Math.round(performance.now() - t0);
+      recordPerfSample('regen', regenTime, now);
+      lastRegen = now;
+      needsDraw = true;
+    }
+    const overlayActive = sunburstEnabled && getSunPulseIntensity() > 0.001;
+    const flashActive = sunburstEnabled && transitionFlashLevel > 0.001;
+    if ((needsDraw || overlayActive || flashActive) && hasCloudDisplay()) {
+      const sourceRect = getCloudDisplaySourceRect();
+      if (!sourceRect) {
+        requestAnimationFrame(frame);
+        return;
+      }
+      cctx.clearRect(0, 0, cloudCan.width, cloudCan.height);
+      const scale = Math.max(cloudCan.width / sourceRect.width, cloudCan.height / sourceRect.height);
+      const dw = sourceRect.width * scale, dh = sourceRect.height * scale;
+      const dx = (cloudCan.width - dw) / 2, dy = (cloudCan.height - dh) / 2;
+      cctx.drawImage(cloudDisplayCan, sourceRect.x, sourceRect.y, sourceRect.width, sourceRect.height, dx, dy, dw, dh);
+      if (overlayActive) drawPulseOverlay(cctx, cloudCan.width, cloudCan.height);
+      if (flashActive) drawTransitionFlashOverlay(cctx, cloudCan.width, cloudCan.height);
+      needsDraw = false;
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+init();
+</script>
+</body>
+</html>
