@@ -977,46 +977,65 @@ const bctx=buf.getContext('2d');
 const bgCan=document.createElement('canvas');bgCan.width=BUF_W;bgCan.height=BUF_H;
 const bgCtx=bgCan.getContext('2d');
 
-// ── EDGE PULSE OVERLAY (60fps, drawn on top of cloud) ───────
+// ── EDGE PULSE OVERLAY (cached glow textures drawn on top of cloud) ─────
+function createGlowTexture(size, stops) {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  const radius = size * 0.5;
+  const grad = ctx.createRadialGradient(radius, radius, 0, radius, radius, radius);
+  for (const [offset, color] of stops) grad.addColorStop(offset, color);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, size, size);
+  return canvas;
+}
+
+const pulseGlowTexture = createGlowTexture(768, [
+  [0, 'rgba(255,250,235,0)'],
+  [0.28, 'rgba(255,246,225,0.04)'],
+  [0.52, 'rgba(255,248,232,0.16)'],
+  [0.72, 'rgba(255,252,244,0.46)'],
+  [0.88, 'rgba(255,255,255,0.88)'],
+  [1, 'rgba(255,255,255,1)'],
+]);
+
+const flashGlowTexture = createGlowTexture(768, [
+  [0, 'rgba(255,255,255,1)'],
+  [0.16, 'rgba(255,252,245,0.92)'],
+  [0.38, 'rgba(255,247,228,0.56)'],
+  [0.68, 'rgba(255,255,255,0.18)'],
+  [1, 'rgba(255,255,255,0)'],
+]);
+
+function drawCenteredGlow(ctx, texture, cx, cy, size, alpha) {
+  if (alpha <= 0 || size <= 0) return;
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.globalAlpha = clamp(alpha, 0, 1);
+  ctx.drawImage(texture, cx - size * 0.5, cy - size * 0.5, size, size);
+  ctx.restore();
+}
+
 function drawPulseOverlay(ctx, canW, canH) {
   const pulse = getSunPulseIntensity();
   if (pulse <= 0) return;
   const easedPulse = Math.pow(pulse, 0.68);
   const alpha = easedPulse * 0.92;
-  const cx = canW / 2, cy = canH / 2;
-  const innerR = Math.min(canW, canH) * 0.32;
-  const outerR = Math.sqrt(cx * cx + cy * cy);
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  const grad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
-  grad.addColorStop(0, 'rgba(255,250,235,0)');
-  grad.addColorStop(0.28, `rgba(255,246,225,${clamp(alpha * 0.04, 0, 1)})`);
-  grad.addColorStop(0.52, `rgba(255,248,232,${clamp(alpha * 0.16, 0, 1)})`);
-  grad.addColorStop(0.72, `rgba(255,252,244,${clamp(alpha * 0.46, 0, 1)})`);
-  grad.addColorStop(0.88, `rgba(255,255,255,${clamp(alpha * 0.88, 0, 1)})`);
-  grad.addColorStop(1, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
-  ctx.fillStyle = grad;
-  ctx.fillRect(0, 0, canW, canH);
-  ctx.restore();
+  const cx = canW * 0.5;
+  const cy = canH * 0.5;
+  const size = Math.sqrt(canW * canW + canH * canH) * 2;
+  drawCenteredGlow(ctx, pulseGlowTexture, cx, cy, size, alpha);
 }
 
 function drawTransitionFlashOverlay(ctx, canW, canH) {
   if (transitionFlashLevel <= 0) return;
   const alpha = Math.pow(transitionFlashLevel, 1.05) * 0.34;
-  const cx = canW / 2, cy = canH / 2;
+  const cx = canW * 0.5;
+  const cy = canH * 0.5;
   const spread = Math.pow(transitionFlashSpread, 0.9);
-  const outerR = Math.min(canW, canH) * (0.14 + spread * 0.82);
-  ctx.save();
-  ctx.globalCompositeOperation = 'screen';
-  const coreGrad = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
-  coreGrad.addColorStop(0, `rgba(255,255,255,${clamp(alpha, 0, 1)})`);
-  coreGrad.addColorStop(0.16, `rgba(255,252,245,${clamp(alpha * 0.92, 0, 1)})`);
-  coreGrad.addColorStop(0.38, `rgba(255,247,228,${clamp(alpha * 0.56, 0, 1)})`);
-  coreGrad.addColorStop(0.68, `rgba(255,255,255,${clamp(alpha * 0.18, 0, 1)})`);
-  coreGrad.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = coreGrad;
-  ctx.fillRect(0, 0, canW, canH);
-  ctx.restore();
+  const size = Math.min(canW, canH) * (0.28 + spread * 1.64);
+  drawCenteredGlow(ctx, flashGlowTexture, cx, cy, size, alpha);
 }
 
 function drawStrokePath(c,px,py){c.beginPath();c.moveTo(px[0],py[0]);for(let i=1;i<VERTS;i++)c.lineTo(px[i],py[i]);c.closePath()}
